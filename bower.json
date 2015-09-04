@@ -1,0 +1,32 @@
+{
+  "name": "frypan-knockout-grid",
+  "main": "frypan.js",
+  "version": "0.1.0",
+  "homepage": "https://github.com/nathanboktae/frypan-knockout-grid",
+  "authors": [
+    "Nathan Black <nathan@nathanblack.org>"
+  ],
+  "description": "A light-weight yet powerful knockout component grid with a simple, functional composition style API",
+  "moduleType": [
+    "amd",
+    "globals",
+    "node"
+  ],
+  "keywords": [
+    "grid",
+    "table",
+    "data-table",
+    "knockout",
+    "knockout-plugin",
+    "knockout-component",
+    "frypan"
+  ],
+  "license": "ISC",
+  "ignore": [
+    "**/.*",
+    "node_modules",
+    "bower_components",
+    "tests.html",
+    "tests.js"
+  ]
+}

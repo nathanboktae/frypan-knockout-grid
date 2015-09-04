@@ -1,0 +1,29 @@
+{
+  "name": "frypan-knockout-grid",
+  "version": "0.1.0",
+  "description": "A light-weight yet powerful knockout component grid with a simple, functional composition style API",
+  "main": "frypan.js",
+  "devDependencies": {
+    "babel-core": "^5.8.22",
+    "chai": "^3.2.0",
+    "knockout": "^3.3.0",
+    "mocha": "^2.2.5",
+    "sinon-browser-only": "^1.12.1",
+    "sinon-chai": "^2.8.0"
+  },
+  "peerDependencies": {
+    "knockout": "^3.2.0"
+  },
+  "scripts": {
+    "test": "mocha-phantomjs tests.html"
+  },
+  "keywords": [
+    "grid",
+    "data-table",
+    "table",
+    "knockout",
+    "frypan"
+  ],
+  "author": "Nathan Black <nathan@nathanblack.org>",
+  "license": "ISC"
+}
