@@ -4,6 +4,8 @@
 
 [![Build Status](https://secure.travis-ci.org/nathanboktae/frypan-knockout-grid.png)](http://travis-ci.org/nathanboktae/frypan-knockout-grid)
 
+[![SauceLabs Test Status](https://saucelabs.com/browser-matrix/frypan-knockout-grid.svg)](https://saucelabs.com/u/frypan-knockout-grid)
+
 ### Features
 
 - Column sorting
