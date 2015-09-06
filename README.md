@@ -12,6 +12,7 @@
 - Column filtering
 - Searching
 - Automatic Virtualization if needed
+- Infinite Scrolling
 - Custom column templates, with built-in one for link rendering
 - Asyncrounous (Remote) data sources
 - Persists and load settings to local storage
@@ -20,7 +21,7 @@
 
 ### API
 
-Documentation to come, for now see [the 45+ tests](https://github.com/nathanboktae/frypan-knockout-grid/blob/master/tests.js)
+Documentation to come, for now see [the 50+ tests](https://github.com/nathanboktae/frypan-knockout-grid/blob/master/tests.js)
 
 ### Installation
 

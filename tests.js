@@ -623,6 +623,7 @@ describe('Frypan grid', function() {
       })
       firstResolve(fruits)
       return firstPromise.then(function() {
+        clock.tick(20)
         dataRequest.should.have.been.calledTwice
         textNodesFor('tbody tr td').should.deep.equal(['apple', 'banana'])
         testEl.querySelector('div.frypan-loading').style.display.should.equal('')
@@ -642,6 +643,7 @@ describe('Frypan grid', function() {
       })
       firstResolve(fruits)
       return firstPromise.then(function() {
+        clock.tick(20)
         dataRequest.should.have.been.calledTwice
         testEl.querySelector('div.frypan-loading').style.display.should.equal('')
 
