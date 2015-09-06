@@ -1,5 +1,5 @@
 /*eslint-env mocha*/
-/*global ko,$*/
+/*global ko*/
 describe('Frypan grid', function() {
   var testEl, fruits, clock,
   testSetup = function(bindingString, viewModel) {
@@ -37,13 +37,25 @@ describe('Frypan grid', function() {
     var evt = document.createEvent('Events')
     evt.initEvent('input', true, true)
     input.dispatchEvent(evt)
-    clock.tick(100)
+    clock && clock.tick(100)
   },
   filterOn = function(colIdx, what) {
     click('a.frypan-filter-toggle')
     click('thead th:nth-of-type(' + (colIdx + 1) + ') .frypan-filters a:nth-of-type(' + (what + 1) + ')')
     clock.tick(100)
+  },
+  addFruits = function(n) {
+    for (var i = 0; i < n; i++) {
+      fruits.push({
+        fruit: ['apple', 'pear', 'banana', 'kiwi', 'strawberry', 'watermelon', 'peach', 'pineapple'][(Math.random() * 8) >> 0],
+        color: ['red', 'orange', 'yellow', 'green', 'pink'][(Math.random() * 5) >> 0],
+        needsPeeling: [true, false, 'maybe'][(Math.random() * 3) >> 0]
+      })
+    }
   }
+
+  // normalize td size so tests we can assert exact numbers in tests
+  document.styleSheets[0].insertRule('td { line-height: 18px; }', 2);
 
   beforeEach(function() {
     fruits = [{
@@ -60,6 +72,7 @@ describe('Frypan grid', function() {
   })
   afterEach(function() {
     testEl && document.body.removeChild(testEl)
+    testEl = null
     clock && clock.restore()
   })
 
@@ -506,7 +519,8 @@ describe('Frypan grid', function() {
         searchTerm: 'ppl',
         sortColumn: 1,
         sortAscending: true,
-        filters: [null, null, null]
+        filters: [null, null, null],
+        skip: 0
       })
 
       resolve(fruits)
@@ -516,7 +530,8 @@ describe('Frypan grid', function() {
           searchTerm: 'ppl',
           sortColumn: 1,
           sortAscending: true,
-          filters: [null, null, ['yellow']]
+          filters: [null, null, ['yellow']],
+          skip: 0
         })
       })
     })
@@ -635,6 +650,173 @@ describe('Frypan grid', function() {
           dataRequest.should.have.been.calledTwice
           testEl.querySelector('div.frypan-loading').style.display.should.equal('none')
         })
+      })
+    })
+
+    describe('infinite scroll', function() {
+      var scrollArea
+      before(function() {
+        // inifite scroll requires virtualization
+        document.styleSheets[0].insertRule('frypan { display: block; width: 300px; height: 200px; overflow: auto }', 1);
+      })
+      beforeEach(function(done) {
+        clock.restore()
+        clock = null
+        addFruits(100)
+
+        typicalAsyncTest()
+        scrollArea = testEl.querySelector('.frypan-scroll-area')
+        dataRequest.should.have.been.calledOnce
+        resolve(fruits)
+        promise = new Promise(function(res, rej) {
+          resolve = res; reject = rej
+        })
+
+        setTimeout(function() {
+          scrollArea.scrollHeight.should.be.above(1000)
+          done()
+        }, 50)
+      })
+      after(function() {
+        document.styleSheets[0].deleteRule(1)
+      })
+
+      it('should not send another request while scrolling in the middle of data', function(done) {
+        scrollArea.scrollTop = 320
+
+        setTimeout(function() {
+          try {
+            scrollArea.scrollTop.should.equal(320)
+            dataRequest.should.have.been.calledOnce
+            dataRequest.should.have.been.deep.calledWith({
+              searchTerm: undefined,
+              sortColumn: undefined,
+              sortAscending: true,
+              filters: [null],
+              skip: 0
+            })
+            // The following part is too flaky
+            // scrollArea.scrollTop = scrollArea.scrollHeight - scrollArea.offsetHeight * 2.2
+
+            // setTimeout(function() {
+            //   try {
+            //     scrollArea.scrollTop.should.be.below(scrollArea.scrollHeight - scrollArea.offsetHeight * 2)
+            //     dataRequest.should.have.been.calledOnce
+            //     done()
+            //   } catch(e) { done(e) }
+            // }, 50)
+            done()
+          } catch(e) { done(e) }
+        }, 50)
+      })
+
+      it('should send a request for more data while scrolling to the end', function(done) {
+        scrollArea.scrollTop = scrollArea.scrollHeight - scrollArea.offsetHeight * 1.1
+
+        setTimeout(function() {
+          dataRequest.should.have.been.calledTwice
+          dataRequest.should.have.been.deep.calledWith({
+            searchTerm: undefined,
+            sortColumn: undefined,
+            sortAscending: true,
+            filters: [null],
+            skip: 102
+          })
+          done()
+        }, 50)
+      })
+
+      it('should append the new items to the end', function(done) {
+        scrollArea.scrollTop = scrollArea.scrollHeight - scrollArea.offsetHeight
+        resolve([{
+          fruit: 'guava',
+          color: 'green'
+        }, {
+          fruit: 'passion fruit',
+          color: 'crimson'
+        }])
+
+        setTimeout(function() {
+          try {
+            testEl.querySelectorAll('tbody tr').length.should.be.above(5)
+            textNodesFor('tbody tr:last-child td').should.deep.equal(['passion fruit'])
+            done()
+          } catch(e) { done(e) }
+        }, 200)
+      })
+
+      it('should reset the skip level when the criteria changes', function(done) {
+        scrollArea.scrollTop = scrollArea.scrollHeight - scrollArea.offsetHeight * 1.2
+        resolve([{
+          fruit: 'passion fruit',
+          color: 'crimson'
+        }])
+        setTimeout(function() {
+          promise = new Promise(function(res) {
+            resolve = res
+          })
+        }, 10)
+
+        setTimeout(function() {
+          dataRequest.should.have.been.calledTwice
+          dataRequest.lastCall.args[0].skip.should.equal(102)
+          should.not.exist(dataRequest.lastCall.args[0].searchTerm)
+          scrollArea.scrollTop.should.be.above(scrollArea.scrollHeight - scrollArea.offsetHeight * 2)
+          setTimeout(function() {
+            resolve([{
+              fruit: 'guava',
+              color: 'green'
+            }])
+            searchFor('uava')
+          }, 10)
+
+          setTimeout(function() {
+            dataRequest.should.have.been.calledThrice
+            textNodesFor('tbody td').should.deep.equal(['guava'])
+            scrollArea.scrollTop.should.equal(0)
+            done()
+          }, 200)
+        }, 70)
+      })
+
+      it('should serialize requests, including with criteria changes', function(done) {
+        scrollArea.scrollTop = scrollArea.scrollHeight - scrollArea.offsetHeight * 1.2
+        setTimeout(function() {
+          searchFor('uava')
+        }, 20)
+
+        setTimeout(function() {
+          dataRequest.should.have.been.calledTwice
+          dataRequest.lastCall.args[0].skip.should.equal(102)
+          should.not.exist(dataRequest.lastCall.args[0].searchTerm)
+          dataRequest.lastCall.args[0].skip.should.equal(102)
+          setTimeout(function() {
+            resolve([{
+              fruit: 'guava',
+              color: 'green'
+            }])
+          }, 5)
+
+          setTimeout(function() {
+            dataRequest.should.have.been.calledThrice
+            done()  
+          }, 200)
+        }, 70)
+      })
+
+      it('should stop requesting more data when no more items are recieved', function(done) {
+        scrollArea.scrollTop = scrollArea.scrollHeight - scrollArea.offsetHeight * 1.2
+        resolve([])
+
+        setTimeout(function() {
+          dataRequest.should.have.been.calledTwice
+          scrollArea.scrollTop = scrollArea.scrollHeight - scrollArea.offsetHeight * 1.05
+
+          setTimeout(function() {
+            dataRequest.should.have.been.calledTwice
+            done()  
+          }, 100)
+        }, 50)
       })
     })
   })
@@ -792,18 +974,10 @@ describe('Frypan grid', function() {
 
   describe('virtualization', function() {
     before(function() {
-      // normalize td size so tests we can assert exact numbers in tests
-      document.styleSheets[0].insertRule('td { line-height: 18px; }', 2);
       document.styleSheets[0].insertRule('frypan { display: block; width: 300px; height: 200px; overflow: auto }', 1);
     })
     beforeEach(function() {
-      for (var i = 0; i < 100; i++) {
-        fruits.push({
-          name: ['apple', 'pear', 'banana', 'kiwi', 'strawberry', 'watermelon', 'peach', 'pineapple'][(Math.random() * 8) >> 0],
-          color: ['red', 'orange', 'yellow', 'green', 'pink'][(Math.random() * 5) >> 0],
-          needsPeeling: [true, false, 'maybe'][(Math.random() * 3) >> 0]
-        })
-      }
+      addFruits(100)
     })
 
     it('should not virtualize when the frypan element does not scroll', function() {
@@ -862,11 +1036,7 @@ describe('Frypan grid', function() {
       var bottomSpacer = testEl.querySelector('.frypan-bottom-spacer')
       bottomSpacer.offsetHeight.should.equal(1820)
 
-      fruits.push({
-        fruit: 'kiwi',
-        needsPeeling: true,
-        color: 'green'
-      })
+      addFruits(1)
       clock.tick(100)
 
       bottomSpacer.offsetHeight.should.equal(1840)

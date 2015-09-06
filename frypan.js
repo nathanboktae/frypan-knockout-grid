@@ -12,8 +12,8 @@
     var
       async = typeof ko.utils.unwrapObservable(params.data) === 'function',
       computeds = [],
-      computed = function() {
-        var c = ko.computed.apply(ko, arguments)
+      computed = function(func, throttle) {
+        var c = throttle ? ko.computed(func).extend({ throttle: throttle }) : ko.computed(func)
         computeds.push(c)
         return c
       }
@@ -120,10 +120,22 @@
     }
 
     if (async) {
-      // Asyncrounous, likely remote data
-      var outstandingRequest, criteriaChangedDuringRequest = false,
+      var
+        outstandingRequest,
+        criteriaChangedDuringRequest = false,
+        skip = ko.observable(0)
 
-      criteria = computed(function() {
+      computed(function() {
+        var
+          itemCount = (ko.utils.peekObservable(grid.sortedItems) || []).length,
+          rowCount = grid.visibleRowCount()
+        if (itemCount > rowCount && itemCount - grid.offset() < rowCount * 2) {
+          skip(itemCount)
+        }
+      }, 5)
+
+      var criteria = computed(function() {
+        skip(0)
         return {
           searchTerm: ko.utils.unwrapObservable(grid.searchTerm),
           filters: grid.columns().map(function(col) {
@@ -136,7 +148,8 @@
 
       grid.outstandingRequest = ko.observable()
       computed(function () {
-        var crit = criteria() // always take a dependency on this
+        var crit = criteria()
+        crit.skip = skip() // always take a dependency on these
         if (!outstandingRequest) {
           outstandingRequest = ko.utils.unwrapObservable(params.data).call(grid, crit)
           if (!outstandingRequest || typeof outstandingRequest.then !== 'function') {
@@ -153,16 +166,19 @@
             }
           }
           outstandingRequest.then(function(items) {
-            grid.sortedItems(items)
+            if (crit.skip) {
+              grid.sortedItems.splice.apply(grid.sortedItems, [crit.skip, 0].concat(items))
+            } else {
+              grid.sortedItems(items)
+            }
             notify()
           }, notify)
         } else {
           criteriaChangedDuringRequest = true
         }
         return outstandingRequest
-      })
+      }, 1)
     } else {
-      // Syncrounous in memory data
       var filteredItems = computed(function() {
         var items = ko.utils.unwrapObservable(params.data),
             columns = grid.columns(),
@@ -189,7 +205,7 @@
           })
         }
         return items
-      }).extend({ throttle: 50 })
+      }, 50)
 
       grid.sortedItems = computed(function() {
         var columns = grid.columns(),
@@ -310,7 +326,8 @@
       var
         table = tbody.parentElement,
         scrollArea = table.parentElement,
-        frypan = scrollArea.parentElement
+        frypan = scrollArea.parentElement,
+        rowHeight
 
       if (frypan.offsetWidth && frypan.offsetHeight) {
         var overflowY = getComputedStyle(frypan)['overflow-y']
@@ -319,44 +336,56 @@
             thead = table.querySelector('thead'),
             topSpacer = table.querySelector('.frypan-top-spacer'),
             bottomSpacer = table.querySelector('.frypan-bottom-spacer'),
-            rowHeight = table.querySelector('tbody td').offsetHeight
+            td = table.querySelector('tbody td')
 
-          scrollArea.style.height = '100%'
-          scrollArea.style['overflow-y'] = overflowY
-          frypan.style['overflow-y'] = 'hidden'
-
-          tbody.style.width = thead.offsetWidth
-          tbody.style.height = scrollArea.offsetHeight - thead.offsetHeight
-          topSpacer.style.display = 'block'
-          bottomSpacer.style.display = 'block'
-
-          // Peg the widths of the columns before we float the table header,
-          // since when we do it will change
-          ko.computed(function() {
-            var colWidths = Array.prototype.map.call(thead.querySelectorAll('th'), function(th) {
-              return th.offsetWidth
+          if (!td) {
+            var sub = bindingContext.$component.sortedItems.subscribe(function() {
+              sub.dispose()
+              setup(table.querySelector('tbody td'))
             })
-            for (var i = 0; i < colWidths.length; i++) {
-              bindingContext.$component.columns()[i].width(colWidths[i])
-            }
-          }, null, { disposeWhenNodeIsRemoved: table })
-
-          scrollArea.parentElement.style.position = 'relative'
-          thead.style.position = 'absolute'
-          thead.style.top = 0
-          thead.style.left = 0
-
-          updateVisibleRowCount()
-          ko.computed(function() {
-            updateOffset(bindingContext.$component)
-          }, null, { disposeWhenNodeIsRemoved: tbody })
-
-          scrollArea.addEventListener('scroll', updateOffset.bind(null, bindingContext.$component))
-          window.addEventListener('resize', updateVisibleRowCount)
-          ko.utils.domNodeDisposal.addDisposeCallback(table, function() {
-            window.removeEventListener('resize', updateVisibleRowCount)
-          })
+          } else {
+            setup(td)
+          }
         }
+      }
+
+      function setup(td) {
+        rowHeight = td.offsetHeight
+        scrollArea.style.height = '100%'
+        scrollArea.style['overflow-y'] = overflowY
+        frypan.style['overflow-y'] = 'hidden'
+
+        tbody.style.width = thead.offsetWidth
+        tbody.style.height = scrollArea.offsetHeight - thead.offsetHeight
+        topSpacer.style.display = 'block'
+        bottomSpacer.style.display = 'block'
+
+        // Peg the widths of the columns before we float the table header,
+        // since when we do it will change
+        ko.computed(function() {
+          var colWidths = Array.prototype.map.call(thead.querySelectorAll('th'), function(th) {
+            return th.offsetWidth
+          })
+          for (var i = 0; i < colWidths.length; i++) {
+            bindingContext.$component.columns()[i].width(colWidths[i])
+          }
+        }, null, { disposeWhenNodeIsRemoved: table })
+
+        scrollArea.parentElement.style.position = 'relative'
+        thead.style.position = 'absolute'
+        thead.style.top = 0
+        thead.style.left = 0
+
+        updateVisibleRowCount()
+        ko.computed(function() {
+          updateOffset(bindingContext.$component)
+        }, null, { disposeWhenNodeIsRemoved: tbody })
+
+        scrollArea.addEventListener('scroll', updateOffset.bind(null, bindingContext.$component))
+        window.addEventListener('resize', updateVisibleRowCount)
+        ko.utils.domNodeDisposal.addDisposeCallback(table, function() {
+          window.removeEventListener('resize', updateVisibleRowCount)
+        })
       }
 
       function updateVisibleRowCount() {
