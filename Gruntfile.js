@@ -49,8 +49,6 @@ module.exports = function(grunt) {
             browserName: 'internet explorer',
             platform: 'WIN8',
             version: '10'
-          }, {
-            browserName: 'microsoftedge'
           }],
           testname: 'frypan-knockout-grid tests',
           tags: [process.env.TRAVIS_BRANCH || 'local']
