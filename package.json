@@ -21,7 +21,7 @@
     "knockout": "^3.2.0"
   },
   "scripts": {
-    "test": "mocha-phantomjs tests.html && (node -e \"require('grunt').tasks(['test']);\" || true)"
+    "test": "mocha-phantomjs tests/tests.html && (node -e \"require('grunt').tasks(['test']);\" || true)"
   },
   "keywords": [
     "grid",

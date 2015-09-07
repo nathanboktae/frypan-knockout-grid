@@ -4,14 +4,15 @@
   <meta charset="utf-8">
   <title>Frypan Tests</title>
   <meta http-equiv="Content-Type" content="text/html; charset=UTF-8">
-  <link rel="stylesheet" href="node_modules/mocha/mocha.css">
+  <link rel="stylesheet" href="../node_modules/mocha/mocha.css">
+  <style>td { line-height: 18px; }</style>
 </head>
 <body>
-  <script src="node_modules/babel-core/browser-polyfill.js"></script>
-  <script src="node_modules/mocha/mocha.js"></script>
-  <script src="node_modules/chai/chai.js"></script>
-  <script src="node_modules/sinon-browser-only/sinon.js"></script>
-  <script src="node_modules/sinon-chai/lib/sinon-chai.js"></script>
+  <script src="../node_modules/babel-core/browser-polyfill.js"></script>
+  <script src="../node_modules/mocha/mocha.js"></script>
+  <script src="../node_modules/chai/chai.js"></script>
+  <script src="../node_modules/sinon-browser-only/sinon.js"></script>
+  <script src="../node_modules/sinon-chai/lib/sinon-chai.js"></script>
 
   <div id="mocha"></div>
 
@@ -22,9 +23,18 @@
     chai.config.includeStack = true
   </script>
 
-  <script src="node_modules/knockout/build/output/knockout-latest.js"></script>
-  <script src="frypan.js"></script>
-  <script src="tests.js"></script>
+  <script src="../node_modules/knockout/build/output/knockout-latest.js"></script>
+  <script src="../frypan.js"></script>
+  <script src="common.js"></script>
+
+  <script src="cell-templates.js"></script>
+  <script src="searching.js"></script>
+  <script src="saving-settings.js"></script>
+  <script src="filtering.js"></script>
+  <script src="sorting.js"></script>
+  <script src="asyncrounous-sources.js"></script>
+  <script src="dynamic-columns.js"></script>
+  <script src="virtualization.js"></script>
 
   <script>
     if ('callPhantom' in window) {
