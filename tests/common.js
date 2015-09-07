@@ -20,14 +20,6 @@ attributesFor = function(selector, attr) {
     return el.attributes[attr] && el.attributes[attr].value
   })
 },
-click = function(el) {
-  var evt = document.createEvent('MouseEvents')
-  evt.initEvent('click', true, true)
-  if (typeof el === 'string') {
-    el = document.querySelector(el)
-  }
-  el.dispatchEvent(evt)
-},
 searchFor = function(term) {
   var input = document.querySelector('.search input')
   input.value = term
@@ -49,7 +41,37 @@ addFruits = function(n) {
       needsPeeling: [true, false, 'maybe'][(Math.random() * 3) >> 0]
     })
   }
+},
+
+click = function(el) {
+  var evt = document.createEvent('MouseEvents')
+  evt.initEvent('click', true, true)
+  if (typeof el === 'string') {
+    el = document.querySelector(el)
+  }
+  el.dispatchEvent(evt)
+},
+pollUntilPassing = function(fn) {
+  var resolve, tries = 0
+
+  var attempt = function() {
+    tries++
+    try {
+      fn()
+      resolve()
+    } catch(e) {
+      if (tries < 150) {
+        setTimeout(attempt, 10)
+      }
+    }
+  } 
+  setTimeout(attempt, 10)
+
+  return new Promise(function(r) {
+    resolve = r
+  })
 }
+
 
 beforeEach(function() {
   fruits = [{

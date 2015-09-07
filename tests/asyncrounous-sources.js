@@ -219,13 +219,13 @@ describe('asyncrounous sources', function() {
     })
   })
 
-  xdescribe('infinite scroll', function() {
+  describe('infinite scroll', function() {
     var scrollArea
     before(function() {
       // inifite scroll requires virtualization
       document.styleSheets[0].insertRule('frypan { display: block; width: 300px; height: 200px; overflow: auto }', 1);
     })
-    beforeEach(function(done) {
+    beforeEach(function() {
       clock.restore()
       clock = null
       addFruits(100)
@@ -238,48 +238,34 @@ describe('asyncrounous sources', function() {
         resolve = res; reject = rej
       })
 
-      setTimeout(function() {
+      return pollUntilPassing(function() {
         scrollArea.scrollHeight.should.be.above(1000)
-        done()
-      }, 50)
+      })
     })
     after(function() {
       document.styleSheets[0].deleteRule(1)
     })
 
-    it('should not send another request while scrolling in the middle of data', function(done) {
+    it('should not send another request while scrolling in the middle of data', function() {
       scrollArea.scrollTop = 320
 
-      setTimeout(function() {
-        try {
-          scrollArea.scrollTop.should.equal(320)
-          dataRequest.should.have.been.calledOnce
-          dataRequest.should.have.been.deep.calledWith({
-            searchTerm: undefined,
-            sortColumn: undefined,
-            sortAscending: true,
-            filters: [null],
-            skip: 0
-          })
-          // The following part is too flaky
-          // scrollArea.scrollTop = scrollArea.scrollHeight - scrollArea.offsetHeight * 2.2
-
-          // setTimeout(function() {
-          //   try {
-          //     scrollArea.scrollTop.should.be.below(scrollArea.scrollHeight - scrollArea.offsetHeight * 2)
-          //     dataRequest.should.have.been.calledOnce
-          //     done()
-          //   } catch(e) { done(e) }
-          // }, 50)
-          done()
-        } catch(e) { done(e) }
-      }, 50)
+      return pollUntilPassing(function() {
+        scrollArea.scrollTop.should.equal(320)
+        dataRequest.should.have.been.calledOnce
+        dataRequest.should.have.been.deep.calledWith({
+          searchTerm: undefined,
+          sortColumn: undefined,
+          sortAscending: true,
+          filters: [null],
+          skip: 0
+        })
+      })
     })
 
-    it('should send a request for more data while scrolling to the end', function(done) {
+    it('should send a request for more data while scrolling to the end', function() {
       scrollArea.scrollTop = scrollArea.scrollHeight - scrollArea.offsetHeight * 1.1
 
-      setTimeout(function() {
+      return pollUntilPassing(function() {
         dataRequest.should.have.been.calledTwice
         dataRequest.should.have.been.deep.calledWith({
           searchTerm: undefined,
@@ -288,11 +274,10 @@ describe('asyncrounous sources', function() {
           filters: [null],
           skip: 102
         })
-        done()
-      }, 50)
+      })
     })
 
-    it('should append the new items to the end', function(done) {
+    it('should append the new items to the end', function() {
       scrollArea.scrollTop = scrollArea.scrollHeight - scrollArea.offsetHeight
       resolve([{
         fruit: 'guava',
@@ -302,87 +287,80 @@ describe('asyncrounous sources', function() {
         color: 'crimson'
       }])
 
-      setTimeout(function() {
-        try {
-          testEl.querySelectorAll('tbody tr').length.should.be.above(5)
-          textNodesFor('tbody tr:last-child td').should.deep.equal(['passion fruit'])
-          done()
-        } catch(e) { done(e) }
-      }, 200)
+      return pollUntilPassing(function() {
+        testEl.querySelectorAll('tbody tr').length.should.be.above(5)
+        textNodesFor('tbody tr:last-child td').should.deep.equal(['passion fruit'])
+      })
     })
 
-    it('should reset the skip level when the criteria changes', function(done) {
+    it('should reset the skip level when the criteria changes', function() {
       scrollArea.scrollTop = scrollArea.scrollHeight - scrollArea.offsetHeight * 1.2
       resolve([{
         fruit: 'passion fruit',
         color: 'crimson'
       }])
-      setTimeout(function() {
+      promise.then(function() {
         promise = new Promise(function(res) {
           resolve = res
         })
-      }, 10)
+      })
 
-      setTimeout(function() {
+      return pollUntilPassing(function() {
         dataRequest.should.have.been.calledTwice
         dataRequest.lastCall.args[0].skip.should.equal(102)
         should.not.exist(dataRequest.lastCall.args[0].searchTerm)
         scrollArea.scrollTop.should.be.above(scrollArea.scrollHeight - scrollArea.offsetHeight * 2)
-        setTimeout(function() {
-          resolve([{
-            fruit: 'guava',
-            color: 'green'
-          }])
-          searchFor('uava')
-        }, 10)
-
-        setTimeout(function() {
+      }).then(function() {
+        resolve([{
+          fruit: 'guava',
+          color: 'green'
+        }])
+        searchFor('uava')
+      }).then(function() {
+        return pollUntilPassing(function() {
           dataRequest.should.have.been.calledThrice
           textNodesFor('tbody td').should.deep.equal(['guava'])
           scrollArea.scrollTop.should.equal(0)
-          done()
-        }, 200)
-      }, 70)
+        })
+      })
     })
 
-    it('should serialize requests, including with criteria changes', function(done) {
+    it('should serialize requests, including with criteria changes', function() {
       scrollArea.scrollTop = scrollArea.scrollHeight - scrollArea.offsetHeight * 1.2
       setTimeout(function() {
         searchFor('uava')
       }, 20)
 
-      setTimeout(function() {
+      return pollUntilPassing(function() {
         dataRequest.should.have.been.calledTwice
         dataRequest.lastCall.args[0].skip.should.equal(102)
         should.not.exist(dataRequest.lastCall.args[0].searchTerm)
         dataRequest.lastCall.args[0].skip.should.equal(102)
-        setTimeout(function() {
-          resolve([{
-            fruit: 'guava',
-            color: 'green'
-          }])
-        }, 5)
-
-        setTimeout(function() {
+      }).then(function() {
+        resolve([{
+          fruit: 'guava',
+          color: 'green'
+        }])
+      }).then(function() {
+        return pollUntilPassing(function() {
           dataRequest.should.have.been.calledThrice
-          done()  
-        }, 200)
-      }, 70)
+        })
+      })
     })
 
-    it('should stop requesting more data when no more items are recieved', function(done) {
+    it('should stop requesting more data when no more items are recieved', function() {
       scrollArea.scrollTop = scrollArea.scrollHeight - scrollArea.offsetHeight * 1.2
       resolve([])
 
-      setTimeout(function() {
+      return pollUntilPassing(function() {
         dataRequest.should.have.been.calledTwice
+      }).then(function() {
         scrollArea.scrollTop = scrollArea.scrollHeight - scrollArea.offsetHeight * 1.05
-
-        setTimeout(function() {
+      }).then(function() {
+        return pollUntilPassing(function() {
           dataRequest.should.have.been.calledTwice
-          done()  
-        }, 100)
-      }, 50)
+        })
+      })
     })
   })
 })
