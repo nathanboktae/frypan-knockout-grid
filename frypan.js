@@ -30,6 +30,7 @@
     grid.offset = ko.observable(0)
     grid.visibleRowCount = ko.observable(500)
     grid.loadingHtml = params.loadingHtml
+    grid.resizableColumns = params.resizableColumns
     grid.sortedItems = ko.observableArray([]) // sync data sources replaces this with a computed
 
     if (!Array.isArray(ko.utils.unwrapObservable(params.columns))) {
@@ -286,6 +287,12 @@
     this.showFilters(this.showFilters() === idx ? null : idx)
   }
 
+  Frypan.prototype.width = function() {
+    return this.columns().reduce(function(width, col) {
+      return width + col.width()
+    }, 0)
+  }
+
   var cleanse = document.createElement('div')
   ko.bindingHandlers.frypanText = {
     update: function(element, valueAccessor, _, __, bindingContext) {
@@ -327,19 +334,20 @@
         table = tbody.parentElement,
         scrollArea = table.parentElement,
         frypan = scrollArea.parentElement,
-        rowHeight
+        grid = bindingContext.$component,
+        thead = table.querySelector('thead'),
+        td = table.querySelector('tbody td'),
+        rowHeight, sub
 
       if (frypan.offsetWidth && frypan.offsetHeight) {
         var overflowY = getComputedStyle(frypan)['overflow-y']
         if (overflowY === 'auto' || overflowY === 'scroll') {
           var
-            thead = table.querySelector('thead'),
             topSpacer = table.querySelector('.frypan-top-spacer'),
-            bottomSpacer = table.querySelector('.frypan-bottom-spacer'),
-            td = table.querySelector('tbody td')
+            bottomSpacer = table.querySelector('.frypan-bottom-spacer')
 
           if (!td) {
-            var sub = bindingContext.$component.sortedItems.subscribe(function() {
+            sub = grid.sortedItems.subscribe(function() {
               sub.dispose()
               setup(table.querySelector('tbody td'))
             })
@@ -348,6 +356,30 @@
           }
         }
       }
+      if (!bottomSpacer && ko.utils.unwrapObservable(grid.resizableColumns)) {
+        if (!td) {
+          sub = grid.sortedItems.subscribe(function() {
+            sub.dispose()
+            pegWidths()
+          })
+        } else {
+          pegWidths()
+        }
+      }
+
+      function pegWidths() {
+        ko.computed(function() {
+          var colWidths = Array.prototype.map.call(thead.querySelectorAll('th'), function(th) {
+            return th.offsetWidth
+          })
+          for (var i = 0; i < colWidths.length; i++) {
+            grid.columns()[i].width(colWidths[i])
+          }
+        }, null, { disposeWhenNodeIsRemoved: table })
+        table.style['table-layout'] = 'fixed'
+        table.style['border-spacing'] = '0'
+        table.style.width = '1px'
+      }
 
       function setup(td) {
         rowHeight = td.offsetHeight
@@ -355,21 +387,13 @@
         scrollArea.style['overflow-y'] = overflowY
         frypan.style['overflow-y'] = 'hidden'
 
-        tbody.style.width = thead.offsetWidth
         tbody.style.height = scrollArea.offsetHeight - thead.offsetHeight
         topSpacer.style.display = 'block'
         bottomSpacer.style.display = 'block'
 
         // Peg the widths of the columns before we float the table header,
         // since when we do it will change
-        ko.computed(function() {
-          var colWidths = Array.prototype.map.call(thead.querySelectorAll('th'), function(th) {
-            return th.offsetWidth
-          })
-          for (var i = 0; i < colWidths.length; i++) {
-            bindingContext.$component.columns()[i].width(colWidths[i])
-          }
-        }, null, { disposeWhenNodeIsRemoved: table })
+        pegWidths()
 
         scrollArea.parentElement.style.position = 'relative'
         thead.style.position = 'absolute'
@@ -378,10 +402,10 @@
 
         updateVisibleRowCount()
         ko.computed(function() {
-          updateOffset(bindingContext.$component)
+          updateOffset(grid)
         }, null, { disposeWhenNodeIsRemoved: tbody })
 
-        scrollArea.addEventListener('scroll', updateOffset.bind(null, bindingContext.$component))
+        scrollArea.addEventListener('scroll', updateOffset.bind(null, grid))
         window.addEventListener('resize', updateVisibleRowCount)
         ko.utils.domNodeDisposal.addDisposeCallback(table, function() {
           window.removeEventListener('resize', updateVisibleRowCount)
@@ -389,20 +413,59 @@
       }
 
       function updateVisibleRowCount() {
-          var visibleRowCount = Math.ceil((scrollArea.clientHeight - thead.offsetHeight - 1) / rowHeight) + 2
-          bindingContext.$component.visibleRowCount(visibleRowCount)
+        var visibleRowCount = Math.ceil((scrollArea.clientHeight - thead.offsetHeight - 1) / rowHeight) + 2
+        grid.visibleRowCount(visibleRowCount)
       }
 
       function updateOffset(grid) {
-          var
-            scrollTop = scrollArea.scrollTop + thead.offsetHeight,
-            topSpacerHeight = scrollTop - scrollTop % rowHeight,
-            offset = (topSpacerHeight - thead.offsetHeight) / rowHeight >> 0
+        var
+          scrollTop = scrollArea.scrollTop + thead.offsetHeight,
+          topSpacerHeight = scrollTop - scrollTop % rowHeight,
+          offset = (topSpacerHeight - thead.offsetHeight) / rowHeight >> 0
 
-          grid.offset(offset)
-          topSpacer.style.height = topSpacerHeight + 'px'
-          bottomSpacer.style.height = (Math.max(0, grid.sortedItems().length - offset - grid.visibleRowCount()) * rowHeight) + 'px'
+        grid.offset(offset)
+        topSpacer.style.height = topSpacerHeight + 'px'
+        bottomSpacer.style.height = (Math.max(0, grid.sortedItems().length - offset - grid.visibleRowCount()) * rowHeight) + 'px'
+        thead.style.left = -scrollArea.scrollLeft + 'px'
       }
+    }
+  }
+
+  ko.bindingHandlers.frypanResizer = {
+    init: function(element, valueAccessor, __, ___, bindingContext) {
+      element.addEventListener('mousedown', function(downEvent) {
+        downEvent.preventDefault()
+        element.classList.add('frypan-resizing')
+
+        var
+          width = valueAccessor(),
+          intialWidth = width(),
+          startMouseX = downEvent.pageX,
+          targetMouseX, animationFrameRequest
+
+        function onMouseMove(moveEvent) {
+          targetMouseX = moveEvent.pageX
+          if (animationFrameRequest) {
+            cancelAnimationFrame(animationFrameRequest)
+          }
+          animationFrameRequest = requestAnimationFrame(function() {
+            width(Math.max(15, intialWidth - startMouseX + targetMouseX))
+          })
+          moveEvent.preventDefault()
+        }
+
+        function onMouseUp() {
+          if (animationFrameRequest) {
+            cancelAnimationFrame(animationFrameRequest)
+          }
+          element.classList.remove('frypan-resizing')
+          document.removeEventListener('mousemove', onMouseMove)
+          document.removeEventListener('mouseup', onMouseUp)
+        }
+
+        document.addEventListener('mousemove', onMouseMove)
+        document.addEventListener('mouseup', onMouseUp)
+      })
     }
   }
 
@@ -410,13 +473,14 @@
     template: '<div class="frypan-scroll-area">\
 <table>\
   <colgroup data-bind="foreach: $component.columns"><col data-bind="style: { width: $data.width() && $data.width() + \'px\' }"></col></colgroup>\
-  <thead><tr data-bind="foreach: $component.columns">\
+  <thead data-bind="style: { width: $component.width() + \'px\' }"><tr data-bind="foreach: $component.columns">\
     <th data-bind="css: $component.classFor($data), attr: { \'aria-sort\': $component.ariaSortForIndex($index) }, style: { width: $data.width() && $data.width() + \'px\' }">\
       <a href="" class="frypan-sort-toggle" data-bind="text: name, click: $component.toggleSort.bind($component)"></a>\
       <!-- ko if: $data.filterOptions -->\
         <a href="" class="frypan-filter-toggle" data-bind="click: $component.toggleShowFilters.bind($component, $index), css: { filtered: !!filters().length }"></a>\
         <div class="frypan-filters" data-bind="foreach: typeof filterOptions === \'function\' ? filterOptions() : filterOptions, visible: $component.showFilters() === $index()"><a href="" data-bind="text: $parent.filterText[$data] || $data, attr: { \'aria-selected\': $parent.filters().indexOf($data) >= 0 }, click: $component.toggleFilter.bind($component, $parent)"></a></div>\
       <!-- /ko -->\
+      <!-- ko if: $component.resizableColumns --><a class="frypan-resizer" data-bind="frypanResizer: $data.width"></a><!-- /ko -->\
     </th></tr>\
   </thead>\
   <tbody class="frypan-top-spacer" style="display: none;">\

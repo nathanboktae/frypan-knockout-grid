@@ -278,6 +278,7 @@ describe('asyncrounous sources', function() {
     })
 
     it('should append the new items to the end', function() {
+      var originalScrollHeight = scrollArea.scrollHeight
       scrollArea.scrollTop = scrollArea.scrollHeight - scrollArea.offsetHeight
       resolve([{
         fruit: 'guava',
@@ -288,8 +289,14 @@ describe('asyncrounous sources', function() {
       }])
 
       return pollUntilPassing(function() {
-        testEl.querySelectorAll('tbody tr').length.should.be.above(5)
-        textNodesFor('tbody tr:last-child td').should.deep.equal(['passion fruit'])
+        scrollArea.scrollHeight.should.be.above(originalScrollHeight + 20)
+      }).then(function() {
+        scrollArea.scrollTop = scrollArea.scrollHeight - scrollArea.offsetHeight
+      }).then(function() {
+        return pollUntilPassing(function() {
+          testEl.querySelectorAll('tbody tr').length.should.be.above(7)
+          textNodesFor('tbody tr:last-child td').should.deep.equal(['passion fruit'])
+        })
       })
     })
 

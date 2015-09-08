@@ -1,5 +1,11 @@
 (function() {
-  var data = ko.observableArray([{ name: 'First row', age: 0, car: 'alpha' }])
+  var data = ko.observableArray([{
+    name: 'First row',
+    age: 0,
+    car: 'alpha',
+    color: 'crimson',
+    blurb: 'hi'
+  }])
 
   function addItems() {
     for (var i = 0; i < 20; i++) {

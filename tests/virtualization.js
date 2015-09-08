@@ -24,6 +24,8 @@ describe('virtualization', function() {
     style.top.should.equal('0px')
   })
 
+  it('should adjust the header when the user scrolls horizontally')
+
   it('should have an initial offset of 0 and top and bottom spacers calculated correctly', function() {
     testSetup('data: data', { data: fruits })
 
@@ -45,12 +47,12 @@ describe('virtualization', function() {
     scrollArea.scrollTop = 171
     setTimeout(function() {
       topSpacer.offsetHeight.should.equal(180)
-      bottomSpacer.offsetHeight.should.equal(1680)
+      bottomSpacer.offsetHeight.should.equal(1660)
 
       scrollArea.scrollTop = 320
       setTimeout(function() {
         topSpacer.offsetHeight.should.equal(340)
-        bottomSpacer.offsetHeight.should.equal(1520)
+        bottomSpacer.offsetHeight.should.equal(1500)
         done()
       }, 25)
     }, 25)

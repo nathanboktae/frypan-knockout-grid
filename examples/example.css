@@ -1,0 +1,43 @@
+* { box-sizing: border-box; }
+
+body {
+  font-family: "Oxygen", Arial, sans-serif;
+  color: #00204f;
+  font-weight: 300;
+}
+h1, frypan {
+  margin-left: 30px;
+}
+a, a:visited {
+  text-decoration: none;
+  color: #7179ff;
+}
+thead {
+  background-color: #c8ffeb;
+}
+thead tr a {
+  color: #74ffca;
+}
+thead th a:hover, thead th a:focus {
+  color: #5b62d3;
+}
+tbody td, thead th {
+  white-space: nowrap;
+  overflow: hidden;
+}
+thead th {
+  position: relative;
+}
+a.frypan-resizer {
+  position: absolute;
+  display: inline-block;
+  width: 3px;
+  height: 100%;
+  right: 0;
+  top: 0;
+  background-color: #7179ff;
+  cursor: col-resize;
+}
+a.frypan-resizer::after {
+  content: ' ';
+}
