@@ -321,26 +321,25 @@
         table = tbody.parentElement,
         scrollArea = table.parentElement,
         frypan = scrollArea.parentElement,
+        frypanStyle = getComputedStyle(frypan),
+        overflowY = frypanStyle['overflow-y'],
         grid = bindingContext.$component,
         thead = table.querySelector('thead'),
         td = table.querySelector('tbody td'),
         rowHeight, sub
 
-      if (frypan.offsetWidth && frypan.offsetHeight) {
-        var overflowY = getComputedStyle(frypan)['overflow-y']
-        if (overflowY === 'auto' || overflowY === 'scroll') {
-          var
-            topSpacer = table.querySelector('.frypan-top-spacer'),
-            bottomSpacer = table.querySelector('.frypan-bottom-spacer')
+      if (overflowY === 'auto' || overflowY === 'scroll') {
+        var
+          topSpacer = table.querySelector('.frypan-top-spacer'),
+          bottomSpacer = table.querySelector('.frypan-bottom-spacer')
 
-          if (!td) {
-            sub = grid.sortedItems.subscribe(function() {
-              sub.dispose()
-              setup(table.querySelector('tbody td'))
-            })
-          } else {
-            setup(td)
-          }
+        if (!td) {
+          sub = grid.sortedItems.subscribe(function() {
+            sub.dispose()
+            setup(table.querySelector('tbody td'))
+          })
+        } else {
+          setup(td)
         }
       }
       if (!bottomSpacer && ko.utils.unwrapObservable(grid.resizableColumns)) {
@@ -370,9 +369,11 @@
 
       function setup(td) {
         rowHeight = td.offsetHeight
-        scrollArea.style.height = '100%'
-        scrollArea.style['overflow-y'] = overflowY
-        frypan.style['overflow-y'] = 'hidden'
+        if (frypanStyle.display !== 'flex') {
+          scrollArea.style.height = '100%'
+        }
+        scrollArea.style['overflow'] = overflowY
+        frypan.style['overflow'] = 'hidden'
 
         tbody.style.height = scrollArea.offsetHeight - thead.offsetHeight
         topSpacer.style.display = 'block'

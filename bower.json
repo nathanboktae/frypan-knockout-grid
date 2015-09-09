@@ -24,6 +24,7 @@
   "ignore": [
     "**/.*",
     "node_modules",
+    "Gruntfile.js",
     "bower_components",
     "tests",
     "examples"
