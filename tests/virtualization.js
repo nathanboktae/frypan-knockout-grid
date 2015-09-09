@@ -2,6 +2,9 @@ describe('virtualization', function() {
   before(function() {
     document.styleSheets[0].insertRule('frypan { display: block; width: 300px; height: 200px; overflow: auto }', 1);
   })
+  after(function() {
+    document.styleSheets[0].deleteRule(1)
+  })
   beforeEach(function() {
     addFruits(100)
   })

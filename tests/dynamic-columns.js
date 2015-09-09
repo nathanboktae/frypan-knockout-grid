@@ -37,13 +37,21 @@ describe('dynamic columns', function() {
       text: 'fruit'
     }, {
       text: 'color',
-      filterOptions: ['red', 'yellow']
+      filterTemplate: '<a class="click-me" data-bind="click: toggle"></div>',
+      toggle: function(col) {
+        col.filterValue('yellow')
+      },
+      filter: function(val, item) {
+        return item.color === val
+      }
     }])
     // Note: this test fails if you mutate item 1 in place and call notifySubscribers(). not sure why.
     clock.tick(10)
 
     testEl.querySelector('thead .frypan-filters a').should.be.ok
-    filterOn(1, 1)
+    click('a.frypan-filter-toggle')
+    click('a.click-me')
+    clock.tick(50)
     textNodesFor('tbody td:first-child span').should.deep.equal(['banana'])
   })
 

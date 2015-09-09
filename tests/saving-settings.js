@@ -8,7 +8,9 @@ describe('saving settings', function() {
         text: 'needsPeeling'
       }, {
         text: 'color',
-        filterOptions: ['red', 'yellow']
+        filterValue: ko.observable('red'),
+        filterTemplate: '<div class="teh-filter" data-bind="text: $data.filterValue"></div>',
+        filter: function(color, item) { return item.color == color }
       }],
       searchTerm: searchTerm,
       data: fruits
@@ -19,15 +21,14 @@ describe('saving settings', function() {
   it('should save settings in local storage if requested', function() {
     localStorage.setItem('fruits', 'peeeeple')
     storageTest()('ppl')
-
-    filterOn(2, 0)
     click('thead th:nth-of-type(2) a')
+    click('thead a.frypan-filter-toggle')
 
     JSON.parse(localStorage.getItem('fruits')).should.deep.equal({
       sortAscending: true,
       sortColumn: 1,
       showFilters: 2,
-      filters: [null, null, ['red']],
+      filters: [null, null, 'red'],
       searchTerm: 'ppl'
     })
   })
@@ -37,23 +38,22 @@ describe('saving settings', function() {
       sortAscending: true,
       sortColumn: 1,
       showFilters: 2,
-      filters: [null, null, ['yellow']],
+      filters: [null, null, 'yellow'],
       searchTerm: 'nan'
     }))
 
     storageTest()
+    clock.tick(100)
 
-    testEl.querySelector('a.frypan-filter-toggle').classList.contains('filtered').should.be.true
+    testEl.querySelector('a.frypan-filter-toggle').classList.contains('frypan-filtered').should.be.true
     attributesFor('thead th', 'aria-sort').should.deep.equal([undefined, 'ascending', undefined])
     textNodesFor('tbody td span em').should.deep.equal(['nan'])
   })
 
-  it('should not load invalid column filters', function() {
-    localStorage.setItem('fruits', {
-      filters: [null, null, ['foobar']]
-    })
+  it('should not load invalid settings', function() {
+    localStorage.setItem('fruits', 'kablammo')
     storageTest()
 
-    textNodesFor('tbody td:first-child span').should.deep.equal(['apple', 'banana'])
+    textNodesFor('tbody td:first-child span').should.deep.equal(['apple'])
   })
 })

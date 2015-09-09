@@ -21,7 +21,7 @@
 
 ### API
 
-Documentation to come, for now see [the 50+ tests](https://github.com/nathanboktae/frypan-knockout-grid/blob/master/tests.js)
+Documentation to come, for now see [the 50+ tests](https://github.com/nathanboktae/frypan-knockout-grid/blob/master/tests)
 
 ### Installation
 

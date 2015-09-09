@@ -63,6 +63,7 @@ describe('asyncrounous sources', function() {
     dataRequest = sinon.spy(function() {
       return promise
     })
+    var filterValue = ko.observable()
 
     testSetup('columns: columns, data: data, searchTerm: searchTerm, sortColumn: sortColumn', {
       columns: [{
@@ -71,7 +72,8 @@ describe('asyncrounous sources', function() {
         text: 'needsPeeling'
       }, {
         text: 'color',
-        filterOptions: ['red', 'yellow']
+        filterTemplate: '<div></div>',
+        filterValue: filterValue
       }],
       searchTerm: ko.observable('ppl'),
       sortColumn: ko.observable(1),
@@ -83,18 +85,19 @@ describe('asyncrounous sources', function() {
       searchTerm: 'ppl',
       sortColumn: 1,
       sortAscending: true,
-      filters: [null, null, null],
+      filters: [undefined, undefined, undefined],
       skip: 0
     })
 
     resolve(fruits)
     return promise.then(function() {
-      filterOn(2, 1)
+      filterValue('yellow')
+      clock.tick(5)
       dataRequest.should.have.been.calledTwice.and.deep.calledWith({
         searchTerm: 'ppl',
         sortColumn: 1,
         sortAscending: true,
-        filters: [null, null, ['yellow']],
+        filters: [undefined, undefined, 'yellow'],
         skip: 0
       })
     })
@@ -112,17 +115,16 @@ describe('asyncrounous sources', function() {
       columns: [{
         text: 'fruit'
       }, {
-        text: 'needsPeeling',
-        filterOptions: ['old', 'young']
+        text: 'needsPeeling'
       }, {
         text: 'color',
-        filterOptions: ['red', 'yellow']
+        filterTemplate: '<div></div>',
+        filter: function() { return false }
       }],
 
       data: dataRequest
     })
 
-    filterOn(1, 1)
     resolve([{
       fruit: 'banana',
       needsPeeling: true,
@@ -256,7 +258,7 @@ describe('asyncrounous sources', function() {
           searchTerm: undefined,
           sortColumn: undefined,
           sortAscending: true,
-          filters: [null],
+          filters: [undefined],
           skip: 0
         })
       })
@@ -271,7 +273,7 @@ describe('asyncrounous sources', function() {
           searchTerm: undefined,
           sortColumn: undefined,
           sortAscending: true,
-          filters: [null],
+          filters: [undefined],
           skip: 102
         })
       })

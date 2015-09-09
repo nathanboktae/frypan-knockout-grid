@@ -22,7 +22,7 @@ describe('column resizing', function() {
 
       it('should not render resizers if resizableColumns is true and fix widths', function() {
         testSetup('data: data, resizableColumns: true', {
-          data: fruits,
+          data: fruits
         })
 
         testEl.querySelectorAll('a.frypan-resizer').length.should.equal(3)

@@ -12,7 +12,6 @@
     "addFruits": true,
     "attributesFor": true,
     "textNodesFor": true,
-    "searchFor": true,
-    "filterOn": true
+    "searchFor": true
   }
 }

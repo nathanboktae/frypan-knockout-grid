@@ -44,18 +44,14 @@
     grid.columns = computed(function() {
       var cols = ko.utils.unwrapObservable(params.columns) || sampleItemKeys().split('🙈').map(function(k) { return { text: k, name: k } })
       return cols.map(function(col, idx) {
-        if (col.filterOptions) {
+        if (col.filterTemplate) {
           if (typeof col.filter !== 'function' && !async) {
-            col.filter = function(filters, item, idx) {
-              return filters.indexOf(grid.textFor(col, item, idx)) >= 0
-            }
+            throw new Error('A filter function is required when filtering synchronous sources')
           }
-          if (!ko.isObservable(col.filters)) {
-            col.filters = ko.observableArray()
+          if (!ko.isObservable(col.filterValue)) {
+            col.filterValue = ko.observable()
           }
-          if (!col.filterText) {
-            col.filterText = {}
-          }
+          col.filterTemplateNodes = ko.utils.parseHtmlFragment(ko.utils.unwrapObservable(col.filterTemplate))
         }
         if (typeof col.sort !== 'function') {
           col.sort = function(a, b) {
@@ -97,11 +93,7 @@
         })
         if (Array.isArray(settings.filters)) {
           grid.columns().forEach(function(col, colIdx) {
-            if (col.filters && Array.isArray(settings.filters[colIdx]) && settings.filters[colIdx].length) {
-              col.filters(settings.filters[colIdx].filter(function(f) {
-                return col.filterOptions.indexOf(f) >= 0
-              }))
-            }
+            col.filterValue && col.filterValue(settings.filters[colIdx])
           })
         }
       }
@@ -109,7 +101,7 @@
       computed(function() {
         var gridState = {
           filters: grid.columns().map(function(col) {
-            return col.filters && col.filters()
+            return col.filterValue && col.filterValue()
           })
         }
         stateProps.forEach(function(prop) {
@@ -140,7 +132,7 @@
         return {
           searchTerm: ko.utils.unwrapObservable(grid.searchTerm),
           filters: grid.columns().map(function(col) {
-            return col.filters && col.filters().length ? col.filters() : null
+            return col.filterValue && col.filterValue()
           }),
           sortColumn: grid.sortColumn(),
           sortAscending: grid.sortAscending()
@@ -186,8 +178,8 @@
             searchTerm = ko.utils.unwrapObservable(grid.searchTerm)
 
         columns.forEach(function(col) {
-          if (col.filters && col.filters().length) {
-            items = items.filter(col.filter.bind(col, col.filters()))
+          if (col.filterValue && col.filterValue()) {
+            items = items.filter(col.filter.bind(col, col.filterValue()))
           }
         })
 
@@ -260,11 +252,6 @@
   }
   Frypan.prototype.linkFor = function(col, item, rowIdx) {
     return getVal.call(this, 'link', col, item, rowIdx)
-  }
-
-  Frypan.prototype.toggleFilter = function(col, filter) {
-    var idx = col.filters().indexOf(filter)
-    idx >= 0 ? col.filters.splice(idx, 1) : col.filters.push(filter)
   }
 
   Frypan.prototype.toggleSort = function(col) {
@@ -476,9 +463,9 @@
   <thead data-bind="style: { width: $component.width() + \'px\' }"><tr data-bind="foreach: $component.columns">\
     <th data-bind="css: $component.classFor($data), attr: { \'aria-sort\': $component.ariaSortForIndex($index) }, style: { width: $data.width() && $data.width() + \'px\' }">\
       <a href="" class="frypan-sort-toggle" data-bind="text: name, click: $component.toggleSort.bind($component)"></a>\
-      <!-- ko if: $data.filterOptions -->\
-        <a href="" class="frypan-filter-toggle" data-bind="click: $component.toggleShowFilters.bind($component, $index), css: { filtered: !!filters().length }"></a>\
-        <div class="frypan-filters" data-bind="foreach: typeof filterOptions === \'function\' ? filterOptions() : filterOptions, visible: $component.showFilters() === $index()"><a href="" data-bind="text: $parent.filterText[$data] || $data, attr: { \'aria-selected\': $parent.filters().indexOf($data) >= 0 }, click: $component.toggleFilter.bind($component, $parent)"></a></div>\
+      <!-- ko if: $data.filterTemplateNodes -->\
+        <a href="" class="frypan-filter-toggle" data-bind="click: $component.toggleShowFilters.bind($component, $index), css: { \'frypan-filtered\': !!filterValue() }"></a>\
+        <div class="frypan-filters" data-bind="template: { nodes: $data.filterTemplateNodes }, visible: $component.showFilters() === $index()"></div>\
       <!-- /ko -->\
       <!-- ko if: $component.resizableColumns --><a class="frypan-resizer" data-bind="frypanResizer: $data.width"></a><!-- /ko -->\
     </th></tr>\
