@@ -233,7 +233,7 @@
   }
 
   Frypan.prototype.textFor = function(col, item, rowIdx) {
-    var val = ko.utils.unwrapObservable(col.text)
+    var val = ko.utils.unwrapObservable(col && col.text)
     if (typeof val === 'string') return item && item[val]
     if (typeof val === 'function') {
       return val.call(this, item, rowIdx) || ''
@@ -241,7 +241,7 @@
   }
 
   function getVal(prop, col, item, rowIdx) {
-    var val = ko.utils.unwrapObservable(col[prop])
+    var val = ko.utils.unwrapObservable(col && col[prop])
     if (typeof val === 'string') return val
     if (typeof val === 'function') {
       return val.call(this, item, rowIdx && rowIdx()) || ''
