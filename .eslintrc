@@ -7,7 +7,7 @@
     "brace-style": [1, { "allowSingleLine": true }],
     "camelcase": 0,
     "comma-spacing": 0,
-    "curly": 1,
+    "curly": 0,
     "eol-last": 0,
     "key-spacing": 0,
     "no-comma-dangle": 0,

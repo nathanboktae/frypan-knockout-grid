@@ -82,14 +82,14 @@
     storageKey = params.storageKey
 
     if (typeof storageKey === 'string') {
-      var settings 
+      var settings
       try {
         settings = JSON.parse(localStorage.getItem(storageKey) || '')
       } catch (e) {}
 
       if (settings && typeof settings === 'object') {
         stateProps.forEach(function(prop) {
-          grid[prop](settings[prop])
+          grid[prop](prop === 'sortColumn' ? grid.columns()[settings[prop]] : settings[prop])
         })
         if (Array.isArray(settings.filters)) {
           grid.columns().forEach(function(col, colIdx) {
@@ -105,7 +105,7 @@
           })
         }
         stateProps.forEach(function(prop) {
-          gridState[prop] = grid[prop]()
+          gridState[prop] = prop === 'sortColumn' ? grid.columns().indexOf(grid[prop]()) : grid[prop]()
         })
 
         localStorage.setItem(storageKey, JSON.stringify(gridState))
@@ -137,7 +137,7 @@
           sortColumn: grid.sortColumn(),
           sortAscending: grid.sortAscending()
         }
-      })
+      }, 1) // required to avoid recursion when updating items below
 
       grid.outstandingRequest = ko.observable()
       computed(function () {
@@ -201,11 +201,10 @@
       }, 50)
 
       grid.sortedItems = computed(function() {
-        var columns = grid.columns(),
+        var sortCol = grid.sortColumn(),
             items = filteredItems()
 
-        if (grid.sortColumn() != null) {
-          var sortCol = columns[grid.sortColumn()]
+        if (sortCol) {
           if (grid.sortAscending()) {
             items = items.sort(sortCol.sort.bind(sortCol))
           } else {
@@ -255,16 +254,15 @@
   }
 
   Frypan.prototype.toggleSort = function(col) {
-    var colIdx = this.columns().indexOf(col)
-    if (colIdx === this.sortColumn()) {
+    if (col === this.sortColumn()) {
       this.sortAscending(!this.sortAscending())
     } else {
-      this.sortColumn(colIdx)
+      this.sortColumn(col)
     }
   }
 
-  Frypan.prototype.ariaSortForIndex = function(idx) {
-    if (this.sortColumn() === idx()) {
+  Frypan.prototype.ariaSortForCol = function(col) {
+    if (this.sortColumn() === col) {
       return this.sortAscending() ? 'ascending' : 'descending'
     }
   }
@@ -462,7 +460,7 @@
 <table>\
   <colgroup data-bind="foreach: $component.columns"><col data-bind="style: { width: $data.width() && $data.width() + \'px\' }"></col></colgroup>\
   <thead data-bind="style: { width: $component.width() + \'px\' }"><tr data-bind="foreach: $component.columns">\
-    <th data-bind="css: $component.classFor($data), attr: { \'aria-sort\': $component.ariaSortForIndex($index) }, style: { width: $data.width() && $data.width() + \'px\' }">\
+    <th data-bind="css: $component.classFor($data), attr: { \'aria-sort\': $component.ariaSortForCol($data) }, style: { width: $data.width() && $data.width() + \'px\' }">\
       <a href="" class="frypan-sort-toggle" data-bind="text: name, click: $component.toggleSort.bind($component)"></a>\
       <!-- ko if: $data.filterTemplateNodes -->\
         <a href="" class="frypan-filter-toggle" data-bind="click: $component.toggleShowFilters.bind($component, $index), css: { \'frypan-filtered\': !!filterValue() }"></a>\

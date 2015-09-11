@@ -64,6 +64,7 @@ describe('dynamic columns', function() {
       textNodesFor('tbody td').should.deep.equal([])
 
       data.push({ id: 1, fruit: 'strawberry' })
+      clock.tick(100)
       textNodesFor('tbody td').should.deep.equal(['1', 'strawberry'])
     })
 
@@ -77,6 +78,7 @@ describe('dynamic columns', function() {
       textNodesFor('tbody td').should.deep.equal([])
 
       data.push({ id: 1, fruit: 'strawberry' })
+      clock.tick(100)
       textNodesFor('tbody td').should.deep.equal(['1', 'strawberry'])
     })
 

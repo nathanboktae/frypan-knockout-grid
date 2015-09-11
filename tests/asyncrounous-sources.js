@@ -63,27 +63,28 @@ describe('asyncrounous sources', function() {
     dataRequest = sinon.spy(function() {
       return promise
     })
-    var filterValue = ko.observable()
+    var filterValue = ko.observable(),
+    col2 = {
+      text: 'needsPeeling'
+    }
 
     testSetup('columns: columns, data: data, searchTerm: searchTerm, sortColumn: sortColumn', {
       columns: [{
         text: 'fruit'
-      }, {
-        text: 'needsPeeling'
-      }, {
+      }, col2, {
         text: 'color',
         filterTemplate: '<div></div>',
         filterValue: filterValue
       }],
       searchTerm: ko.observable('ppl'),
-      sortColumn: ko.observable(1),
+      sortColumn: ko.observable(col2),
 
       data: dataRequest
     })
 
     dataRequest.should.have.been.calledOnce.and.deep.calledWith({
       searchTerm: 'ppl',
-      sortColumn: 1,
+      sortColumn: col2,
       sortAscending: true,
       filters: [undefined, undefined, undefined],
       skip: 0
@@ -95,7 +96,7 @@ describe('asyncrounous sources', function() {
       clock.tick(5)
       dataRequest.should.have.been.calledTwice.and.deep.calledWith({
         searchTerm: 'ppl',
-        sortColumn: 1,
+        sortColumn: col2,
         sortAscending: true,
         filters: [undefined, undefined, 'yellow'],
         skip: 0
