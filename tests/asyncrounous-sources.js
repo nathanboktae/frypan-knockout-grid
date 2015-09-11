@@ -104,6 +104,49 @@ describe('asyncrounous sources', function() {
     })
   })
 
+  it('should not include the sort column if it is no longer a displayed column', function() {
+    dataRequest = sinon.spy(function() {
+      return promise = new Promise(function(res) {
+        res({
+          fruit: 'banana',
+          needsPeeling: true,
+          color: 'yellow'
+        })
+      })
+    })
+
+    testEl = document.createElement('div')
+    testEl.innerHTML = '<frypan params="columns: columns, data: data"></frypan>'
+    document.body.appendChild(testEl)
+
+    var col2 = {
+      text: 'color'
+    },
+    columns = ko.observableArray([{
+      text: 'fruit'
+    }, col2])
+
+    ko.applyBindings({
+      columns: columns,
+      data: dataRequest
+    }, testEl)
+
+    return promise.then(function() {
+      clock.tick(100)
+      should.not.exist(dataRequest.lastCall.args[0].sortColumn)
+      click('thead th:nth-child(2) a')
+      return promise
+    }).then(function() {
+      clock.tick(100)
+      dataRequest.lastCall.args[0].sortColumn.should.equal(col2)
+      columns.pop()
+      return promise
+    }).then(function() {
+      clock.tick(100)
+      should.not.exist(dataRequest.lastCall.args[0].sortColumn)
+    })
+  })
+
   it('should not attempt to refilter the data from the server', function() {
     promise = new Promise(function(res, rej) {
       resolve = res; reject = rej

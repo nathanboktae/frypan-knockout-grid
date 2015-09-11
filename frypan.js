@@ -118,6 +118,7 @@
         criteriaChangedDuringRequest = false,
         skip = ko.observable(0)
 
+      // infinite scrolling
       computed(function() {
         var
           itemCount = (ko.utils.peekObservable(grid.sortedItems) || []).length,
@@ -134,7 +135,7 @@
           filters: grid.columns().map(function(col) {
             return col.filterValue && col.filterValue()
           }),
-          sortColumn: grid.sortColumn(),
+          sortColumn: grid.columns().indexOf(grid.sortColumn()) === -1 ? undefined : grid.sortColumn(),
           sortAscending: grid.sortAscending()
         }
       }, 1) // required to avoid recursion when updating items below
