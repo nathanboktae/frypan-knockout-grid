@@ -45,7 +45,7 @@ describe('saving settings', function() {
     storageTest()
     clock.tick(100)
 
-    testEl.querySelector('a.frypan-filter-toggle').classList.contains('frypan-filtered').should.be.true
+    testEl.querySelector('th:nth-child(3)').classList.contains('frypan-filtered').should.be.true
     attributesFor('thead th', 'aria-sort').should.deep.equal([undefined, 'ascending', undefined])
     textNodesFor('tbody td span em').should.deep.equal(['nan'])
   })

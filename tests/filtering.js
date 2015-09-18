@@ -1,42 +1,45 @@
 describe('filtering', function() {
   var setFilterTest = function() {
-    testSetup({
-      columns: [{
-        text: 'fruit'
-      }, {
-        text: 'needsPeeling'
-      }, {
-        text: 'color',
-        filterOptions: ['red', 'yellow'],
-        filterTemplate: '<div data-bind="foreach: $data.filterOptions"><a href="" data-bind="text: $data, attr: { \'aria-selected\': $parent.filterValue() && $parent.filterValue().indexOf($data) >= 0 }, click: $parent.toggleFilter.bind($parent)"></a></div>',
-        toggleFilter: function(color) {
-          var val = this.filterValue()
-          if (!val) {
-            this.filterValue([color])
-          } else {
-            var idx = val.indexOf(color)
-            idx >= 0 ? val.splice(idx, 1) : val.push(color)
-            this.filterValue(val.length && val)
+      testSetup({
+        columns: [{
+          text: 'fruit'
+        }, {
+          text: 'needsPeeling'
+        }, {
+          text: 'color',
+          filterOptions: ['red', 'yellow'],
+          filterTemplate: '<div data-bind="foreach: $data.filterOptions"><a href="" data-bind="text: $data, attr: { \'aria-selected\': $parent.filterValue() && $parent.filterValue().indexOf($data) >= 0 }, click: $parent.toggleFilter.bind($parent)"></a></div>',
+          toggleFilter: function(color) {
+            var val = this.filterValue()
+            if (!val) {
+              this.filterValue([color])
+            } else {
+              var idx = val.indexOf(color)
+              idx >= 0 ? val.splice(idx, 1) : val.push(color)
+              this.filterValue(val.length && val)
+            }
+          },
+          filter: function(filters, item /*, idx*/ ) {
+            return filters.indexOf(item.color) >= 0
           }
-        },
-        filter: function(filters, item/*, idx*/) {
-          return filters.indexOf(item.color) >= 0
-        }
-      }],
-      data: fruits
-    })
-  },
-  filterOn = function(colIdx, what) {
-    click('a.frypan-filter-toggle')
-    click('thead th:nth-of-type(' + (colIdx + 1) + ') .frypan-filters a:nth-of-type(' + (what + 1) + ')')
-    clock.tick(100)
-  }
+        }],
+        data: fruits
+      })
+    },
+    filterOn = function(colIdx, what) {
+      click('a.frypan-filter-toggle')
+      click('thead th:nth-of-type(' + (colIdx + 1) + ') .frypan-filters a:nth-of-type(' + (what + 1) + ')')
+      clock.tick(100)
+    }
 
   beforeEach(function() {
     fruits.push({
       fruit: 'strawberry',
       needsPeeling: 25,
-      color: 'yellow'
+      color: 'yellow',
+      component: function() {
+        return componentBindingValue
+      }
     })
   })
 
@@ -47,10 +50,10 @@ describe('filtering', function() {
 
   it('should only have the filtered class when there are filters', function() {
     setFilterTest()
-    testEl.querySelector('a.frypan-filter-toggle').classList.contains('frypan-filtered').should.be.false
+    testEl.querySelector('th:nth-child(3)').classList.contains('frypan-filtered').should.be.false
 
     filterOn(2, 1)
-    testEl.querySelector('a.frypan-filter-toggle').classList.contains('frypan-filtered').should.be.true
+    testEl.querySelector('th:nth-child(3)').classList.contains('frypan-filtered').should.be.true
   })
 
   it('should not filter anything out by default', function() {

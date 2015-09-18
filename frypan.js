@@ -10,7 +10,7 @@
 
   function Frypan(params) {
     var
-      async = typeof ko.utils.unwrapObservable(params.data) === 'function',
+      async = typeof ko.unwrap(params.data) === 'function',
       computeds = [],
       computed = function(func, throttle) {
         var c = throttle ? ko.computed(func).extend({ throttle: throttle }) : ko.computed(func)
@@ -33,16 +33,16 @@
     grid.resizableColumns = params.resizableColumns
     grid.sortedItems = ko.observableArray([]) // sync data sources replaces this with a computed
 
-    if (!Array.isArray(ko.utils.unwrapObservable(params.columns))) {
+    if (!Array.isArray(ko.unwrap(params.columns))) {
       var sampleItemKeys = computed(function() {
-        var sampleItem = async ? grid.sortedItems()[0] : ko.utils.unwrapObservable(params.data)[0]
+        var sampleItem = async ? grid.sortedItems()[0] : ko.unwrap(params.data)[0]
         // returning a joined string here as observables don't do deep equals
         return sampleItem ? Object.keys(sampleItem).join('🙈') : ''
       })
     }
 
     grid.columns = computed(function() {
-      var cols = ko.utils.unwrapObservable(params.columns) || sampleItemKeys().split('🙈').map(function(k) { return { text: k, name: k } })
+      var cols = ko.unwrap(params.columns) || sampleItemKeys().split('🙈').map(function(k) { return { text: k, name: k } })
       return cols.map(function(col, idx) {
         if (col.filterTemplate) {
           if (typeof col.filter !== 'function' && !async) {
@@ -51,7 +51,7 @@
           if (!ko.isObservable(col.filterValue)) {
             col.filterValue = ko.observable()
           }
-          col.filterTemplateNodes = ko.utils.parseHtmlFragment(ko.utils.unwrapObservable(col.filterTemplate))
+          col.filterTemplateNodes = ko.utils.parseHtmlFragment(ko.unwrap(col.filterTemplate))
         }
         if (typeof col.sort !== 'function') {
           col.sort = function(a, b) {
@@ -66,7 +66,7 @@
           col.width = ko.observable()
         }
 
-        var template = ko.utils.unwrapObservable(col.template)
+        var template = ko.unwrap(col.template)
         if (!template) {
           template = col.link ? '<a data-bind="attr: { href: $component.linkFor($col, $data, $index) }, css: $component.classFor($col, $data, $index)"><span data-bind="frypanText: $component.textFor($col, $data, $index())"></span></a>' :
             '<span data-bind="frypanText: $component.textFor($col, $data, $index()), css: $component.classFor($col, $data, $index)"></span>'
@@ -131,7 +131,7 @@
       var criteria = computed(function() {
         skip(0)
         return {
-          searchTerm: ko.utils.unwrapObservable(grid.searchTerm),
+          searchTerm: ko.unwrap(grid.searchTerm),
           filters: grid.columns().map(function(col) {
             return col.filterValue && col.filterValue()
           }),
@@ -145,7 +145,7 @@
         var crit = criteria()
         crit.skip = skip() // always take a dependency on these
         if (!outstandingRequest) {
-          outstandingRequest = ko.utils.unwrapObservable(params.data).call(grid, crit)
+          outstandingRequest = ko.unwrap(params.data).call(grid, crit)
           if (!outstandingRequest || typeof outstandingRequest.then !== 'function') {
             throw new Error('A promise was not returned from the data function')
           }
@@ -160,6 +160,9 @@
             }
           }
           outstandingRequest.then(function(items) {
+            if (!Array.isArray(items)) {
+              throw new Error('async request did not result in an array of items but was ' + typeof items)
+            }
             if (crit.skip) {
               grid.sortedItems.splice.apply(grid.sortedItems, [crit.skip, 0].concat(items))
             } else {
@@ -174,9 +177,9 @@
       }, 1)
     } else {
       var filteredItems = computed(function() {
-        var items = ko.utils.unwrapObservable(params.data),
+        var items = ko.unwrap(params.data),
             columns = grid.columns(),
-            searchTerm = ko.utils.unwrapObservable(grid.searchTerm)
+            searchTerm = ko.unwrap(grid.searchTerm)
 
         columns.forEach(function(col) {
           if (col.filterValue && col.filterValue()) {
@@ -233,7 +236,7 @@
   }
 
   Frypan.prototype.textFor = function(col, item, rowIdx) {
-    var val = ko.utils.unwrapObservable(col && col.text)
+    var val = ko.unwrap(col && col.text)
     if (typeof val === 'string') return item && item[val]
     if (typeof val === 'function') {
       return val.call(this, item, rowIdx) || ''
@@ -241,7 +244,7 @@
   }
 
   function getVal(prop, col, item, rowIdx) {
-    var val = ko.utils.unwrapObservable(col && col[prop])
+    var val = ko.unwrap(col && col[prop])
     if (typeof val === 'string') return val
     if (typeof val === 'function') {
       return val.call(this, item, rowIdx && rowIdx()) || ''
@@ -249,6 +252,10 @@
   }
   Frypan.prototype.classFor = function(col, item, rowIdx) {
     return getVal.call(this, 'class', col, item, rowIdx)
+  }
+  Frypan.prototype.headerClassFor = function(col, item, rowIdx) {
+    return getVal.call(this, 'class', col, item, rowIdx) +
+      (col.filterValue && col.filterValue() ? ' frypan-filtered' : '')
   }
   Frypan.prototype.linkFor = function(col, item, rowIdx) {
     return getVal.call(this, 'link', col, item, rowIdx)
@@ -269,7 +276,7 @@
   }
 
   Frypan.prototype.toggleShowFilters = function(idx) {
-    idx = ko.utils.unwrapObservable(idx)
+    idx = ko.unwrap(idx)
     this.showFilters(this.showFilters() === idx ? null : idx)
   }
 
@@ -282,7 +289,7 @@
   var cleanse = document.createElement('div')
   ko.bindingHandlers.frypanText = {
     update: function(element, valueAccessor, _, __, bindingContext) {
-      var text = ko.utils.unwrapObservable(valueAccessor()),
+      var text = ko.unwrap(valueAccessor()),
           term = bindingContext.$component.searchTerm()
       if (term && typeof text === 'string' && text.indexOf(term) >= 0) {
         cleanse.textContent = text
@@ -341,7 +348,7 @@
           setup(td)
         }
       }
-      if (!bottomSpacer && ko.utils.unwrapObservable(grid.resizableColumns)) {
+      if (!bottomSpacer && ko.unwrap(grid.resizableColumns)) {
         if (!td) {
           sub = grid.sortedItems.subscribe(function() {
             sub.dispose()
@@ -461,10 +468,10 @@
 <table>\
   <colgroup data-bind="foreach: $component.columns"><col data-bind="style: { width: $data.width() && $data.width() + \'px\' }"></col></colgroup>\
   <thead data-bind="style: { width: $component.width() + \'px\' }"><tr data-bind="foreach: $component.columns">\
-    <th data-bind="css: $component.classFor($data), attr: { \'aria-sort\': $component.ariaSortForCol($data) }, style: { width: $data.width() && $data.width() + \'px\' }">\
+    <th data-bind="css: $component.headerClassFor($data), attr: { \'aria-sort\': $component.ariaSortForCol($data) }, style: { width: $data.width() && $data.width() + \'px\' }">\
       <a href="" class="frypan-sort-toggle" data-bind="text: name, click: $component.toggleSort.bind($component)"></a>\
       <!-- ko if: $data.filterTemplateNodes -->\
-        <a href="" class="frypan-filter-toggle" data-bind="click: $component.toggleShowFilters.bind($component, $index), css: { \'frypan-filtered\': !!filterValue() }"></a>\
+        <a href="" class="frypan-filter-toggle" data-bind="click: $component.toggleShowFilters.bind($component, $index)"></a>\
         <div class="frypan-filters" data-bind="template: { nodes: $data.filterTemplateNodes }, visible: $component.showFilters() === $index()"></div>\
       <!-- /ko -->\
       <!-- ko if: $component.resizableColumns --><a class="frypan-resizer" data-bind="frypanResizer: $data.width"></a><!-- /ko -->\

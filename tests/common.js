@@ -1,12 +1,12 @@
 var testEl, fruits, clock,
-testSetup = function(bindingString, viewModel) {
+testSetup = function(params, viewModel) {
   if (!viewModel) {
-    viewModel = bindingString
-    bindingString = null
+    viewModel = params
+    params = null
   }
 
   testEl = document.createElement('frypan')
-  testEl.setAttribute('params', bindingString || 'columns: columns, data: data')
+  testEl.setAttribute('params', params || 'columns: columns, data: data')
   document.body.appendChild(testEl)
   ko.applyBindings(viewModel, testEl)
 },
@@ -27,11 +27,6 @@ searchFor = function(term) {
   evt.initEvent('input', true, true)
   input.dispatchEvent(evt)
   clock && clock.tick(100)
-},
-filterOn = function(colIdx, what) {
-  click('a.frypan-filter-toggle')
-  click('thead th:nth-of-type(' + (colIdx + 1) + ') .frypan-filters a:nth-of-type(' + (what + 1) + ')')
-  clock.tick(100)
 },
 addFruits = function(n) {
   for (var i = 0; i < n; i++) {
@@ -60,6 +55,9 @@ pollUntilPassing = function(fn) {
       fn()
       resolve()
     } catch(e) {
+      if (tries == 60) {
+        console.error(e)
+      }
       if (tries < 150) {
         setTimeout(attempt, 10)
       }

@@ -107,11 +107,11 @@ describe('asyncrounous sources', function() {
   it('should not include the sort column if it is no longer a displayed column', function() {
     dataRequest = sinon.spy(function() {
       return promise = new Promise(function(res) {
-        res({
+        res([{
           fruit: 'banana',
           needsPeeling: true,
           color: 'yellow'
-        })
+        }])
       })
     })
 
@@ -296,7 +296,7 @@ describe('asyncrounous sources', function() {
       scrollArea.scrollTop = 320
 
       return pollUntilPassing(function() {
-        scrollArea.scrollTop.should.equal(320)
+        scrollArea.scrollTop.should.be.above(318).and.below(322)
         dataRequest.should.have.been.calledOnce
         dataRequest.should.have.been.deep.calledWith({
           searchTerm: undefined,
@@ -409,7 +409,7 @@ describe('asyncrounous sources', function() {
       return pollUntilPassing(function() {
         dataRequest.should.have.been.calledTwice
       }).then(function() {
-        scrollArea.scrollTop = scrollArea.scrollHeight - scrollArea.offsetHeight * 1.05
+        scrollArea.scrollTop = scrollArea.scrollHeight - scrollArea.offsetHeight * 1.2
       }).then(function() {
         return pollUntilPassing(function() {
           dataRequest.should.have.been.calledTwice
