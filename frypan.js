@@ -414,11 +414,11 @@
       function updateOffset(grid) {
         var
           scrollTop = scrollArea.scrollTop + thead.offsetHeight,
-          topSpacerHeight = scrollTop - scrollTop % rowHeight,
-          offset = (topSpacerHeight - thead.offsetHeight) / rowHeight >> 0
+          topSpacerRowAlignedHeight = scrollTop - scrollTop % rowHeight,
+          offset = Math.ceil((topSpacerRowAlignedHeight - thead.offsetHeight) / rowHeight)
 
         grid.offset(offset)
-        topSpacer.style.height = topSpacerHeight + 'px'
+        topSpacer.style.height = topSpacerRowAlignedHeight + 'px'
         bottomSpacer.style.height = (Math.max(0, grid.sortedItems().length - offset - grid.visibleRowCount()) * rowHeight) + 'px'
         thead.style.left = -scrollArea.scrollLeft + 'px'
       }
@@ -478,7 +478,7 @@
     </th></tr>\
   </thead>\
   <tbody class="frypan-top-spacer" style="display: none;">\
-  <tbody data-bind="foreach: items, frypanVirtualization: true"><tr data-bind="frypanRow:true"></tr></tbody>\
+  <tbody data-bind="foreach: items, frypanVirtualization: true"><tr data-bind="frypanRow:true, css: { \'frypan-odd\': ($component.offset() + $index()) % 2 === 1 }"></tr></tbody>\
   <tbody class="frypan-bottom-spacer" style="display: none;">\
 </table></div>\
 <div class="frypan-loading" data-bind="visible: outstandingRequest(), html: $component.loadingHtml"></div>',

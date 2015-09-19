@@ -37,7 +37,7 @@ describe('virtualization', function() {
     testEl.querySelector('.frypan-bottom-spacer').offsetHeight.should.equal(1820)
   })
 
-  it('should update the spacers and offset when the user scrolls', function(done) {
+  it('should update the spacers and offset when the user scrolls', function() {
     clock.restore()
     clock = null
     testSetup('data: data', { data: fruits })
@@ -48,17 +48,38 @@ describe('virtualization', function() {
       bottomSpacer = testEl.querySelector('.frypan-bottom-spacer')
 
     scrollArea.scrollTop = 171
-    setTimeout(function() {
+    return pollUntilPassing(function() {
       topSpacer.offsetHeight.should.equal(180)
       bottomSpacer.offsetHeight.should.equal(1660)
-
+    }).then(function() {
       scrollArea.scrollTop = 320
-      setTimeout(function() {
-        topSpacer.offsetHeight.should.equal(340)
-        bottomSpacer.offsetHeight.should.equal(1500)
-        done()
-      }, 25)
-    }, 25)
+    }).then(function() {
+      return pollUntilPassing(function() {
+        topSpacer.offsetHeight.should.equal(randomOf(320, 340))
+        bottomSpacer.offsetHeight.should.equal(randomOf(1500, 1520))
+      })
+    })
+  })
+
+  it('should add a frypan-odd class to odd index rows', function() {
+    clock.restore()
+    clock = null
+    testSetup('data: data', { data: fruits })
+
+    var tbody = testEl.querySelector('tbody:not(.frypan-top-spacer):not(.frypan-bottom-spacer)')
+   
+    tbody.querySelectorAll('tr.frypan-odd').length.should.equal(5)
+    tbody.querySelector('tr:first-child').classList.contains('frypan-odd').should.be.false
+    tbody.querySelector('tr:nth-child(2)').classList.contains('frypan-odd').should.be.true
+    // need slice(0,3) for a phantomjs bug
+    textNodesFor('tr.frypan-odd:nth-child(2) td').slice(0,3).should.deep.equal(['banana', 'true', 'yellow'])
+
+    testEl.querySelector('.frypan-scroll-area').scrollTop = 35
+    return pollUntilPassing(function() {
+      tbody.querySelector('tr:first-child').classList.contains('frypan-odd').should.be.true
+      tbody.querySelector('tr:nth-child(2)').classList.contains('frypan-odd').should.be.false
+      textNodesFor('tr.frypan-odd:first-child td').should.deep.equal(['banana', 'true', 'yellow'])
+    })
   })
 
   it('should update the bottom spacer when new data comes in', function() {

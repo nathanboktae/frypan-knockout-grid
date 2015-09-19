@@ -47,7 +47,7 @@ click = function(el) {
   el.dispatchEvent(evt)
 },
 pollUntilPassing = function(fn) {
-  var resolve, tries = 0
+  var resolve, reject, tries = 0
 
   var attempt = function() {
     tries++
@@ -55,21 +55,24 @@ pollUntilPassing = function(fn) {
       fn()
       resolve()
     } catch(e) {
-      if (tries == 60) {
-        console.error(e)
-      }
-      if (tries < 150) {
+      if (tries < 100) {
         setTimeout(attempt, 10)
+      } else {
+        reject(e)
       }
     }
   } 
   setTimeout(attempt, 10)
 
-  return new Promise(function(r) {
-    resolve = r
+  return new Promise(function(r, rj) {
+    resolve = r, reject = rj
   })
+},
+randomOf = function() {
+  return arguments[Math.round(Math.random() * arguments.length)]
 }
 
+document.styleSheets[0].insertRule('td, th { height: 20px; margin: 0; border: 0; padding: 0 }', 10);
 
 beforeEach(function() {
   fruits = [{
