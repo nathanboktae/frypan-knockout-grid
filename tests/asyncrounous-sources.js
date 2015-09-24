@@ -204,7 +204,13 @@ describe('asyncrounous sources', function() {
     })
   })
 
-  it('should hide the loading div even when the request fails')
+  it('should hide the loading div even when the request fails', function() {
+    typicalAsyncTest()
+    reject(new Error('oops'))
+    return promise.then(null, function() {
+      testEl.querySelector('div.frypan-loading').style.display.should.equal('none')
+    })
+  })
 
   it('should only have one request in flight at a time', function() {
     typicalAsyncTest()

@@ -56,6 +56,14 @@ describe('filtering', function() {
     testEl.querySelector('th:nth-child(3)').classList.contains('frypan-filtered').should.be.true
   })
 
+  it('should add a class when showing filter options', function() {
+    setFilterTest()
+    testEl.querySelector('th:nth-child(3)').classList.contains('frypan-filter-open').should.be.false
+
+    click('a.frypan-filter-toggle')
+    testEl.querySelector('th:nth-child(3)').classList.contains('frypan-filter-open').should.be.true
+  })
+
   it('should not filter anything out by default', function() {
     setFilterTest()
 

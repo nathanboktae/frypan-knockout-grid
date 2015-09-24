@@ -27,7 +27,27 @@ describe('virtualization', function() {
     style.top.should.equal('0px')
   })
 
-  it('should adjust the header when the user scrolls horizontally')
+  it('should adjust the header when the user scrolls horizontally', function() {
+    clock.restore()
+    clock = null
+    fruits.forEach(function(fruit) {
+      fruit.blurb = 'Lorem ipsum dolor sit amet, consectetur adipiscing elit, sed do eiusmod tempor incididunt ut labore et dolore magna aliqua. Ut enim ad minim veniam, quis nostrud exercitation ullamco laboris nisi ut aliquip ex ea commodo consequat. Duis aute irure dolor in reprehenderit in voluptate velit esse cillum dolore eu fugiat nulla pariatur.'
+    })
+    document.styleSheets[0].insertRule('tbody td, thead th { white-space: nowrap; overflow: hidden; }', 3);
+    testSetup('data: data', { data: fruits })
+
+    var
+      scrollArea = testEl.querySelector('.frypan-scroll-area'),
+      thead = testEl.querySelector('thead')
+
+    scrollArea.querySelector('table').offsetWidth.should.be.above(300)
+    scrollArea.scrollLeft = 25
+    return pollUntilPassing(function() {
+      thead.offsetLeft.should.be.above(-26).and.below(-24)
+    }).then(function() {
+      document.styleSheets[0].deleteRule(3)
+    })
+  })
 
   it('should have an initial offset of 0 and top and bottom spacers calculated correctly', function() {
     testSetup('data: data', { data: fruits })

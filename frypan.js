@@ -253,9 +253,10 @@
   Frypan.prototype.classFor = function(col, item, rowIdx) {
     return getVal.call(this, 'class', col, item, rowIdx)
   }
-  Frypan.prototype.headerClassFor = function(col, item, rowIdx) {
-    return getVal.call(this, 'class', col, item, rowIdx) +
-      (col.filterValue && col.filterValue() ? ' frypan-filtered' : '')
+  Frypan.prototype.headerClassFor = function(col, colIdx) {
+    return (getVal.call(this, 'class', col) || '') +
+      (col.filterValue && col.filterValue() ? ' frypan-filtered' : '') +
+      (this.showFilters() === colIdx ? ' frypan-filter-open' : '')
   }
   Frypan.prototype.linkFor = function(col, item, rowIdx) {
     return getVal.call(this, 'link', col, item, rowIdx)
@@ -341,8 +342,11 @@
 
         if (!td) {
           sub = grid.sortedItems.subscribe(function() {
-            sub.dispose()
-            setup(table.querySelector('tbody td'))
+            var td = table.querySelector('tbody td')
+            if (td) {
+              sub.dispose()
+              setup(td)
+            }
           })
         } else {
           setup(td)
@@ -413,12 +417,11 @@
 
       function updateOffset(grid) {
         var
-          scrollTop = scrollArea.scrollTop + thead.offsetHeight,
-          topSpacerRowAlignedHeight = scrollTop - scrollTop % rowHeight,
-          offset = Math.ceil((topSpacerRowAlignedHeight - thead.offsetHeight) / rowHeight)
+          offset = Math.floor(scrollArea.scrollTop / rowHeight),
+          topSpacerHeight = (offset * rowHeight) + thead.offsetHeight
 
         grid.offset(offset)
-        topSpacer.style.height = topSpacerRowAlignedHeight + 'px'
+        topSpacer.style.height = topSpacerHeight + 'px'
         bottomSpacer.style.height = (Math.max(0, grid.sortedItems().length - offset - grid.visibleRowCount()) * rowHeight) + 'px'
         thead.style.left = -scrollArea.scrollLeft + 'px'
       }
@@ -468,7 +471,7 @@
 <table>\
   <colgroup data-bind="foreach: $component.columns"><col data-bind="style: { width: $data.width() && $data.width() + \'px\' }"></col></colgroup>\
   <thead data-bind="style: { width: $component.width() + \'px\' }"><tr data-bind="foreach: $component.columns">\
-    <th data-bind="css: $component.headerClassFor($data), attr: { \'aria-sort\': $component.ariaSortForCol($data) }, style: { width: $data.width() && $data.width() + \'px\' }">\
+    <th data-bind="css: $component.headerClassFor($data, $index()), attr: { \'aria-sort\': $component.ariaSortForCol($data) }, style: { width: $data.width() && $data.width() + \'px\' }">\
       <a href="" class="frypan-sort-toggle" data-bind="text: name, click: $component.toggleSort.bind($component)"></a>\
       <!-- ko if: $data.filterTemplateNodes -->\
         <a href="" class="frypan-filter-toggle" data-bind="click: $component.toggleShowFilters.bind($component, $index)"></a>\
