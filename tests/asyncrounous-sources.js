@@ -33,12 +33,26 @@ describe('asyncrounous sources', function() {
     })
   })
 
-  it('should show allow custom loading html', function() {
+  it('should show allow custom loading html via params', function() {
     typicalAsyncTest()
 
     textNodesFor('tbody tr td').should.be.empty
     testEl.querySelector('div.frypan-loading').style.display.should.equal('')
     testEl.querySelector('.frypan-loading p').textContent.should.equal('loading...')
+  })
+
+  it('should show allow custom loading html via a frypan-loading child element', function() {
+    testEl = document.createElement('div')
+    testEl.innerHTML = '<frypan params="data: data"><frypan-loading>Loading!</frypan-loading></frypan>'
+    document.body.appendChild(testEl)
+
+    ko.applyBindings({
+      loadingHtml: '<p>loading...</p>',
+      data: function() { return new Promise(function() { }) }
+    }, testEl)
+
+    testEl.querySelector('div.frypan-loading').style.display.should.equal('')
+    testEl.querySelector('.frypan-loading').textContent.should.equal('Loading!')
   })
 
   it('should show a loading div while data is loading', function() {

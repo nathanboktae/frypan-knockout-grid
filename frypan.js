@@ -486,7 +486,19 @@
 </table></div>\
 <div class="frypan-loading" data-bind="visible: outstandingRequest(), html: $component.loadingHtml"></div>',
 
-    viewModel: Frypan,
+    viewModel: {
+      createViewModel: function(params, componentInfo) {
+        var loadingTemplate = componentInfo.templateNodes.filter(function(n) {
+          return n.tagName === 'FRYPAN-LOADING'
+        })[0]
+
+        if (loadingTemplate) {
+          params.loadingHtml = loadingTemplate.innerHTML
+        }
+
+        return new Frypan(params)
+      }
+    },
     synchronous: true
   })
 })
