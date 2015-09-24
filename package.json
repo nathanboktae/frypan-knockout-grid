@@ -16,9 +16,6 @@
     "sinon-browser-only": "^1.12.1",
     "sinon-chai": "^2.8.0"
   },
-  "peerDependencies": {
-    "knockout": "^3.2.0"
-  },
   "scripts": {
     "test": "mocha-phantomjs tests/tests.html && (node -e \"require('grunt').tasks(['test']);\" || true)"
   },

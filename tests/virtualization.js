@@ -53,8 +53,8 @@ describe('virtualization', function() {
     testSetup('data: data', { data: fruits })
 
     thead = testEl.querySelector('thead')
-    testEl.querySelector('.frypan-top-spacer').offsetHeight.should.equal(20)
-    testEl.querySelector('.frypan-bottom-spacer').offsetHeight.should.equal(1820)
+    testEl.querySelector('.frypan-top-spacer').offsetHeight.should.be.above(19).and.below(22)
+    testEl.querySelector('.frypan-bottom-spacer').offsetHeight.should.be.above(1819).and.below(1822)
   })
 
   it('should update the spacers and offset when the user scrolls', function() {
@@ -69,14 +69,14 @@ describe('virtualization', function() {
 
     scrollArea.scrollTop = 171
     return pollUntilPassing(function() {
-      topSpacer.offsetHeight.should.equal(180)
-      bottomSpacer.offsetHeight.should.equal(1660)
+      topSpacer.offsetHeight.should.equal(randomOf(180, 181))
+      bottomSpacer.offsetHeight.should.equal(randomOf(1660, 1661))
     }).then(function() {
       scrollArea.scrollTop = 320
     }).then(function() {
       return pollUntilPassing(function() {
-        topSpacer.offsetHeight.should.equal(randomOf(320, 340))
-        bottomSpacer.offsetHeight.should.equal(randomOf(1500, 1520))
+        [320, 340, 341].some(function(x) { return topSpacer.offsetHeight == x }).should.be.true;
+        [1500, 1520, 1521].some(function(x) { return bottomSpacer.offsetHeight == x }).should.be.true
       })
     })
   })
