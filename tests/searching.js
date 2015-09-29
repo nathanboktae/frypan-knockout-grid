@@ -1,16 +1,20 @@
 describe('searching', function() {
-  var searchTestSetup = function(searchFunc) {
+  var rowClick, searchTestSetup = function(searchFunc) {
     testEl = document.createElement('div')
-    testEl.innerHTML = '<aside class="search"><input type="text" data-bind="value: searchTerm, valueUpdate: \'input\'"></aside><frypan params="columns: columns, data: data, searchTerm: searchTerm"></frypan>'
+    testEl.innerHTML = '<aside class="search"><input type="text" data-bind="value: searchTerm, valueUpdate: \'input\'"></aside><frypan params="columns: columns, data: data, searchTerm: searchTerm, rowClick: rowClick"></frypan>'
     document.body.appendChild(testEl)
 
+    rowClick = sinon.spy(function() {
+      return true
+    })
     ko.applyBindings({
       searchTerm: ko.observable(),
       data: fruits,
       columns: [{
         text: 'fruit',
         search: searchFunc
-      }]
+      }],
+      rowClick: rowClick
     }, testEl)
   }
 
@@ -42,5 +46,15 @@ describe('searching', function() {
 
     searchFor('ppl')
     textNodesFor('tbody tr td span em').should.deep.equal(['ppl'])
+  })
+
+  it('should provide the correct item to rowClick when a row is clicked', function() {
+    searchTestSetup()
+    searchFor('ban')
+    click('tbody tr:first-child td')
+
+    rowClick.should.have.been.calledOnce
+    rowClick.lastCall.args[0].should.equal(fruits[1])
+    rowClick.lastCall.args[1].defaultPrevented.should.equal.true
   })
 })

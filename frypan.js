@@ -30,6 +30,7 @@
     grid.offset = ko.observable(0)
     grid.visibleRowCount = ko.observable(500)
     grid.loadingHtml = params.loadingHtml
+    grid.rowClick = params.rowClick
     grid.resizableColumns = params.resizableColumns
     grid.sortedItems = ko.observableArray([]) // sync data sources replaces this with a computed
 
@@ -302,7 +303,14 @@
   }
 
   ko.bindingHandlers.frypanRow = {
-    init: function() {
+    init: function(element, _, __, ___, bindingContext) {
+      if (bindingContext.$component.rowClick) {
+        element.addEventListener('click', function(e) {
+          if (bindingContext.$component.rowClick(bindingContext.$data, e)) {
+            e.preventDefault()
+          }
+        })
+      }
       return { controlsDescendantBindings: true }
     },
     update: function(element, _, __, ___, bindingContext) {
@@ -481,7 +489,7 @@
     </th></tr>\
   </thead>\
   <tbody class="frypan-top-spacer" style="display: none;">\
-  <tbody data-bind="foreach: items, frypanVirtualization: true"><tr data-bind="frypanRow:true, css: { \'frypan-odd\': ($component.offset() + $index()) % 2 === 1 }"></tr></tbody>\
+  <tbody data-bind="foreach: items, frypanVirtualization: true"><tr data-bind="frypanRow: true, css: { \'frypan-odd\': ($component.offset() + $index()) % 2 === 1 }"></tr></tbody>\
   <tbody class="frypan-bottom-spacer" style="display: none;">\
 </table></div>\
 <div class="frypan-loading" data-bind="visible: outstandingRequest(), html: $component.loadingHtml"></div>',
