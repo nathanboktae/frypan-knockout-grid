@@ -80,14 +80,22 @@
     })
 
     var stateProps = ['searchTerm', 'showFilters', 'sortColumn', 'sortAscending'],
-    storageKey = params.storageKey
+    settingStorage = params.settingStorage
 
-    if (typeof storageKey === 'string') {
-      var settings
-      try {
-        settings = JSON.parse(localStorage.getItem(storageKey) || '')
-      } catch (e) {}
+    if (typeof settingStorage === 'string') {
+      settingStorage = function() {
+        if (arguments.length) {
+          localStorage.setItem(params.settingStorage, JSON.stringify(arguments[0]))
+        } else {
+          try {
+            return JSON.parse(localStorage.getItem(params.settingStorage))
+          } catch (e) {}
+        }
+      }
+    }
 
+    if (settingStorage) {
+      var settings = settingStorage(), firstCall = true
       if (settings && typeof settings === 'object') {
         stateProps.forEach(function(prop) {
           grid[prop](prop === 'sortColumn' ? grid.columns()[settings[prop]] : settings[prop])
@@ -109,7 +117,11 @@
           gridState[prop] = prop === 'sortColumn' ? grid.columns().indexOf(grid[prop]()) : grid[prop]()
         })
 
-        localStorage.setItem(storageKey, JSON.stringify(gridState))
+        if (firstCall) {
+          firstCall = false
+          return
+        }
+        settingStorage(gridState)
       })
     }
 
