@@ -30,6 +30,7 @@
     grid.offset = ko.observable(0)
     grid.visibleRowCount = ko.observable(500)
     grid.loadingHtml = params.loadingHtml
+    grid.filterToggleTemplate = params.filterToggleTemplate
     grid.rowClick = params.rowClick
     grid.resizableColumns = params.resizableColumns
     grid.sortedItems = ko.observableArray([]) // sync data sources replaces this with a computed
@@ -314,6 +315,18 @@
     }
   }
 
+  ko.bindingHandlers.frypanFilter = {
+    init: function(element, valueAccessor, __, ___, bindingContext) {
+      element.addEventListener('click', function(e) {
+        e.preventDefault()
+        bindingContext.$component.toggleShowFilters(bindingContext.$index)
+      })
+      if (bindingContext.$component.filterToggleTemplate) {
+        element.innerHTML = bindingContext.$component.filterToggleTemplate
+      }
+    }
+  }
+
   ko.bindingHandlers.frypanRow = {
     init: function(element, _, __, ___, bindingContext) {
       if (bindingContext.$component.rowClick) {
@@ -326,7 +339,7 @@
       return { controlsDescendantBindings: true }
     },
     update: function(element, _, __, ___, bindingContext) {
-      var children = Array.prototype.slice.call(element.children)
+      var children = Array.prototype.slice.call(element.childNodes)
       children.forEach(function(node) {
         ko.cleanNode(element)
         element.removeChild(node)
@@ -494,7 +507,7 @@
     <th data-bind="css: $component.headerClassFor($data, $index()), attr: { \'aria-sort\': $component.ariaSortForCol($data) }, style: { width: $data.width() && $data.width() + \'px\' }">\
       <a href="" class="frypan-sort-toggle" data-bind="text: name, click: $component.toggleSort.bind($component)"></a>\
       <!-- ko if: $data.filterTemplateNodes -->\
-        <a href="" class="frypan-filter-toggle" data-bind="click: $component.toggleShowFilters.bind($component, $index)"></a>\
+        <a href="" class="frypan-filter-toggle" data-bind="frypanFilter:true"></a>\
         <div class="frypan-filters" data-bind="template: { nodes: $data.filterTemplateNodes }, visible: $component.showFilters() === $index()"></div>\
       <!-- /ko -->\
       <!-- ko if: $component.resizableColumns --><a class="frypan-resizer" data-bind="frypanResizer: $data.width"></a><!-- /ko -->\

@@ -1,6 +1,7 @@
 describe('filtering', function() {
-  var setFilterTest = function() {
-      testSetup({
+  var setFilterTest = function(toggleTemplate) {
+      testSetup('columns: columns, data: data, filterToggleTemplate: toggleTemplate', {
+        toggleTemplate: toggleTemplate,
         columns: [{
           text: 'fruit'
         }, {
@@ -46,6 +47,13 @@ describe('filtering', function() {
   it('should not show filter options until clicked', function() {
     setFilterTest()
     testEl.querySelector('.frypan-filters').style.display.should.equal('none')
+    testEl.querySelector('a.frypan-filter-toggle').innerHTML.should.be.empty
+  })
+
+  it('should optionally allow a template for the filter toggle', function() {
+    setFilterTest('<span data-bind="text: $data.text + \' is \' + (filterValue() ? \'set\' : \'not set\')"></span>')
+    testEl.querySelector('.frypan-filters').style.display.should.equal('none')
+    testEl.querySelector('a.frypan-filter-toggle span').textContent.should.equal('color is not set')
   })
 
   it('should only have the filtered class when there are filters', function() {
