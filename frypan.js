@@ -508,7 +508,7 @@
       <a href="" class="frypan-sort-toggle" data-bind="text: name, click: $component.toggleSort.bind($component)"></a>\
       <!-- ko if: $data.filterTemplateNodes -->\
         <a href="" class="frypan-filter-toggle" data-bind="frypanFilter:true"></a>\
-        <div class="frypan-filters" data-bind="template: { nodes: $data.filterTemplateNodes }, visible: $component.showFilters() === $index()"></div>\
+        <div class="frypan-filters" data-bind="template: { nodes: $data.filterTemplateNodes }"></div>\
       <!-- /ko -->\
       <!-- ko if: $component.resizableColumns --><a class="frypan-resizer" data-bind="frypanResizer: $data.width"></a><!-- /ko -->\
     </th></tr>\
@@ -517,12 +517,12 @@
   <tbody data-bind="foreach: items, frypanVirtualization: true"><tr data-bind="frypanRow: true, css: { \'frypan-odd\': ($component.offset() + $index()) % 2 === 1 }"></tr></tbody>\
   <tbody class="frypan-bottom-spacer" style="display: none;">\
 </table></div>\
-<div class="frypan-loading" data-bind="visible: outstandingRequest(), html: $component.loadingHtml"></div>',
+<div class="frypan-loader" data-bind="css: { \'frypan-loading\': outstandingRequest() }, html: $component.loadingHtml"></div>',
 
     viewModel: {
       createViewModel: function(params, componentInfo) {
         var loadingTemplate = componentInfo.templateNodes.filter(function(n) {
-          return n.tagName === 'FRYPAN-LOADING'
+          return n.tagName === 'FRYPAN-LOADER'
         })[0]
 
         if (loadingTemplate) {

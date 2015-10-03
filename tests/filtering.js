@@ -44,15 +44,8 @@ describe('filtering', function() {
     })
   })
 
-  it('should not show filter options until clicked', function() {
-    setFilterTest()
-    testEl.querySelector('.frypan-filters').style.display.should.equal('none')
-    testEl.querySelector('a.frypan-filter-toggle').innerHTML.should.be.empty
-  })
-
   it('should optionally allow a template for the filter toggle', function() {
     setFilterTest('<span data-bind="text: $data.text + \' is \' + (filterValue() ? \'set\' : \'not set\')"></span>')
-    testEl.querySelector('.frypan-filters').style.display.should.equal('none')
     testEl.querySelector('a.frypan-filter-toggle span').textContent.should.equal('color is not set')
   })
 
@@ -66,6 +59,7 @@ describe('filtering', function() {
 
   it('should add a class when showing filter options', function() {
     setFilterTest()
+    testEl.querySelector('a.frypan-filter-toggle').innerHTML.should.be.empty
     testEl.querySelector('th:nth-child(3)').classList.contains('frypan-filter-open').should.be.false
 
     click('a.frypan-filter-toggle')

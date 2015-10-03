@@ -37,13 +37,13 @@ describe('asyncrounous sources', function() {
     typicalAsyncTest()
 
     textNodesFor('tbody tr td').should.be.empty
-    testEl.querySelector('div.frypan-loading').style.display.should.equal('')
-    testEl.querySelector('.frypan-loading p').textContent.should.equal('loading...')
+    testEl.querySelector('div.frypan-loader').should.have.class('frypan-loading')
+    testEl.querySelector('.frypan-loader p').textContent.should.equal('loading...')
   })
 
-  it('should show allow custom loading html via a frypan-loading child element', function() {
+  it('should show allow custom loading html via a frypan-loader child element', function() {
     testEl = document.createElement('div')
-    testEl.innerHTML = '<frypan params="data: data"><frypan-loading>Loading!</frypan-loading></frypan>'
+    testEl.innerHTML = '<frypan params="data: data"><frypan-loader>Loading!</frypan-loader></frypan>'
     document.body.appendChild(testEl)
 
     ko.applyBindings({
@@ -51,22 +51,22 @@ describe('asyncrounous sources', function() {
       data: function() { return new Promise(function() { }) }
     }, testEl)
 
-    testEl.querySelector('div.frypan-loading').style.display.should.equal('')
-    testEl.querySelector('.frypan-loading').textContent.should.equal('Loading!')
+    testEl.querySelector('div.frypan-loader').should.have.class('frypan-loading')
+    testEl.querySelector('.frypan-loader').textContent.should.equal('Loading!')
   })
 
   it('should show a loading div while data is loading', function() {
     typicalAsyncTest()
 
     textNodesFor('tbody tr td').should.be.empty
-    testEl.querySelector('div.frypan-loading').style.display.should.equal('')
+    testEl.querySelector('div.frypan-loader').should.have.class('frypan-loading')
 
     resolve(fruits)
 
     return promise.then(function() {
       dataRequest.should.have.been.calledOnce
       textNodesFor('tbody tr td').should.deep.equal(['apple', 'banana'])
-      testEl.querySelector('div.frypan-loading').style.display.should.equal('none')
+      testEl.querySelector('div.frypan-loader').should.not.have.class('frypan-loading')
     })
   })
 
@@ -204,7 +204,7 @@ describe('asyncrounous sources', function() {
 
       searchFor('bana')
       textNodesFor('tbody tr td').should.deep.equal(['apple', 'banana'])
-      testEl.querySelector('div.frypan-loading').style.display.should.equal('')
+      testEl.querySelector('div.frypan-loader').should.have.class('frypan-loading')
       dataRequest.should.have.been.calledTwice
 
       resolve([{
@@ -213,7 +213,7 @@ describe('asyncrounous sources', function() {
       }])
       return promise.then(function() {
         textNodesFor('tbody tr td').should.deep.equal(['banana'])
-        testEl.querySelector('div.frypan-loading').style.display.should.equal('none')
+        testEl.querySelector('div.frypan-loader').should.not.have.class('frypan-loading')
       })
     })
   })
@@ -222,7 +222,7 @@ describe('asyncrounous sources', function() {
     typicalAsyncTest()
     reject(new Error('oops'))
     return promise.then(null, function() {
-      testEl.querySelector('div.frypan-loading').style.display.should.equal('none')
+      testEl.querySelector('div.frypan-loader').should.not.have.class('frypan-loading')
     })
   })
 
@@ -241,11 +241,11 @@ describe('asyncrounous sources', function() {
   it('should submit a pending request right after the current one succeeds', function() {
     typicalAsyncTest()
     dataRequest.should.have.been.calledOnce
-    testEl.querySelector('div.frypan-loading').style.display.should.equal('')
+    testEl.querySelector('div.frypan-loader').should.have.class('frypan-loading')
 
     searchFor('bana')
     dataRequest.should.have.been.calledOnce
-    testEl.querySelector('div.frypan-loading').style.display.should.equal('')
+    testEl.querySelector('div.frypan-loader').should.have.class('frypan-loading')
 
     var firstResolve = resolve, firstPromise = promise
     promise = new Promise(function(res, rej) {
@@ -256,7 +256,7 @@ describe('asyncrounous sources', function() {
       clock.tick(20)
       dataRequest.should.have.been.calledTwice
       textNodesFor('tbody tr td').should.deep.equal(['apple', 'banana'])
-      testEl.querySelector('div.frypan-loading').style.display.should.equal('')
+      testEl.querySelector('div.frypan-loader').should.have.class('frypan-loading')
     })
   })
 
@@ -275,12 +275,12 @@ describe('asyncrounous sources', function() {
     return firstPromise.then(function() {
       clock.tick(20)
       dataRequest.should.have.been.calledTwice
-      testEl.querySelector('div.frypan-loading').style.display.should.equal('')
+      testEl.querySelector('div.frypan-loader').should.have.class('frypan-loading')
 
       resolve(fruits)
       return promise.then(function() {
         dataRequest.should.have.been.calledTwice
-        testEl.querySelector('div.frypan-loading').style.display.should.equal('none')
+        testEl.querySelector('div.frypan-loader').should.not.have.class('frypan-loading')
       })
     })
   })
