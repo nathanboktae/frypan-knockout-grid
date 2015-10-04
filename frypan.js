@@ -223,10 +223,11 @@
             items = filteredItems()
 
         if (sortCol) {
+          items = items.slice()
           if (grid.sortAscending()) {
-            items = items.sort(sortCol.sort.bind(sortCol))
+            items.sort(sortCol.sort.bind(sortCol))
           } else {
-            items = items.sort(function() {
+            items.sort(function() {
               return -sortCol.sort.apply(sortCol, arguments)
             })
           }
