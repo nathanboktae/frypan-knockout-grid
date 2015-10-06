@@ -29,11 +29,10 @@
     grid.sortAscending = params.sortAscending || ko.observable(true)
     grid.offset = ko.observable(0)
     grid.visibleRowCount = ko.observable(500)
-    grid.loadingHtml = params.loadingHtml
-    grid.filterToggleTemplate = params.filterToggleTemplate
-    grid.rowClick = params.rowClick
-    grid.resizableColumns = params.resizableColumns
     grid.sortedItems = ko.observableArray([]) // sync data sources replaces this with a computed
+    ;['loadingHtml', 'filterToggleTemplate', 'rowClick', 'rowClass', 'resizableColumns'].forEach(function(p) {
+      grid[p] = params[p]
+    })
 
     if (!Array.isArray(ko.unwrap(params.columns))) {
       var sampleItemKeys = computed(function() {
@@ -500,6 +499,14 @@
     }
   }
 
+  // the css binding is being used by `rowClass` so we use a custom simple class binding
+  // well simplier if IE10 and PhantomJS supported classList fully
+  ko.bindingHandlers.frypanAlt = {
+    update: function(element, valueAccessor) {
+      element.classList[valueAccessor() % 2 === 1 ? 'add' : 'remove']('frypan-odd')
+    }
+  }
+
   return ko.components.register('frypan', {
     template: '<div class="frypan-scroll-area">\
 <table>\
@@ -515,7 +522,7 @@
     </th></tr>\
   </thead>\
   <tbody class="frypan-top-spacer" style="display: none;">\
-  <tbody data-bind="foreach: items, frypanVirtualization: true"><tr data-bind="frypanRow: true, css: { \'frypan-odd\': ($component.offset() + $index()) % 2 === 1 }"></tr></tbody>\
+  <tbody data-bind="foreach: items, frypanVirtualization: true"><tr data-bind="frypanRow: true, css: $component.rowClass && $component.rowClass($data, $index), frypanAlt: $component.offset() + $index()"></tr></tbody>\
   <tbody class="frypan-bottom-spacer" style="display: none;">\
 </table></div>\
 <div class="frypan-loader" data-bind="css: { \'frypan-loading\': outstandingRequest() }, html: $component.loadingHtml"></div>',

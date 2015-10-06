@@ -144,4 +144,17 @@ describe('cell templates', function() {
       attributesFor('tbody td > a', 'class').should.deep.equal(['fruits', 'fruits'])
     })
   })
+
+  describe('rowClass', function() {
+    it('should add a class on a row returned from the function', function() {
+      testSetup('data: data, rowClass: rowClass', {
+        rowClass: function(item) {
+          return 'fruit-' + item.fruit
+        },
+        data: fruits
+      })
+
+      attributesFor('tbody tr', 'class').should.deep.equal(['fruit-apple', 'fruit-banana frypan-odd'])
+    })
+  })
 })
