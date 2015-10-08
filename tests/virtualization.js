@@ -89,15 +89,15 @@ describe('virtualization', function() {
     var tbody = testEl.querySelector('tbody:not(.frypan-top-spacer):not(.frypan-bottom-spacer)')
    
     tbody.querySelectorAll('tr.frypan-odd').length.should.equal(5)
-    tbody.querySelector('tr:first-child').classList.contains('frypan-odd').should.be.false
-    tbody.querySelector('tr:nth-child(2)').classList.contains('frypan-odd').should.be.true
+    tbody.querySelector('tr:first-child').should.not.have.class('frypan-odd')
+    tbody.querySelector('tr:nth-child(2)').should.have.class('frypan-odd')
     // need slice(0,3) for a phantomjs bug
     textNodesFor('tr.frypan-odd:nth-child(2) td').slice(0,3).should.deep.equal(['banana', 'true', 'yellow'])
 
     testEl.querySelector('.frypan-scroll-area').scrollTop = 35
     return pollUntilPassing(function() {
-      tbody.querySelector('tr:first-child').classList.contains('frypan-odd').should.be.true
-      tbody.querySelector('tr:nth-child(2)').classList.contains('frypan-odd').should.be.false
+      tbody.querySelector('tr:first-child').should.have.class('frypan-odd')
+      tbody.querySelector('tr:nth-child(2)').should.not.have.class('frypan-odd')
       textNodesFor('tr.frypan-odd:first-child td').should.deep.equal(['banana', 'true', 'yellow'])
     })
   })

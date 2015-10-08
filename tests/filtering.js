@@ -51,19 +51,31 @@ describe('filtering', function() {
 
   it('should only have the filtered class when there are filters', function() {
     setFilterTest()
-    testEl.querySelector('th:nth-child(3)').classList.contains('frypan-filtered').should.be.false
+    testEl.querySelector('th:nth-child(3)').should.not.have.class('frypan-filtered')
 
     filterOn(2, 1)
-    testEl.querySelector('th:nth-child(3)').classList.contains('frypan-filtered').should.be.true
+    testEl.querySelector('th:nth-child(3)').should.have.class('frypan-filtered')
   })
 
   it('should add a class when showing filter options', function() {
     setFilterTest()
     testEl.querySelector('a.frypan-filter-toggle').innerHTML.should.be.empty
-    testEl.querySelector('th:nth-child(3)').classList.contains('frypan-filter-open').should.be.false
+    testEl.querySelector('th:nth-child(3)').should.not.have.class('frypan-filter-open')
 
     click('a.frypan-filter-toggle')
-    testEl.querySelector('th:nth-child(3)').classList.contains('frypan-filter-open').should.be.true
+    testEl.querySelector('th:nth-child(3)').should.have.class('frypan-filter-open')
+  })
+
+  it('should close the filter when the user clicks outside the grid', function() {
+    setFilterTest()
+    click('a.frypan-filter-toggle')
+    testEl.querySelector('th:nth-child(3)').should.have.class('frypan-filter-open')
+
+    click('frypan tr:first-child td:first-child')
+    testEl.querySelector('th:nth-child(3)').should.have.class('frypan-filter-open')
+
+    click('#mocha')
+    testEl.querySelector('th:nth-child(3)').should.not.have.class('frypan-filter-open')
   })
 
   it('should not filter anything out by default', function() {

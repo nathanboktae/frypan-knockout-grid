@@ -537,7 +537,18 @@
           params.loadingHtml = loadingTemplate.innerHTML
         }
 
-        return new Frypan(params)
+        var frypan = new Frypan(params),
+        closeFiltersIfNeeded = function(e) {
+          if (e.target && !componentInfo.element.contains(e.target)) {
+            frypan.showFilters(null)
+          }
+        }
+        document.body.addEventListener('click', closeFiltersIfNeeded)
+        ko.utils.domNodeDisposal.addDisposeCallback(componentInfo.element, function() {
+          document.body.removeEventListener(closeFiltersIfNeeded)
+        })
+
+        return frypan
       }
     },
     synchronous: true

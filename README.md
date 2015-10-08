@@ -16,7 +16,7 @@
 - Custom column templates, with built-in one for link rendering
 - Column resizing
 - Asyncrounous (Remote) data sources
-- Persists and load settings to local storage
+- Persists and load settings to local storage or anywhere else
 - Dynamic column discovery - an array of objects (or async data function) is all you need to get started 
 - No event soup - everything is wrapped in computed observables. Everything just works when your data and options change
 

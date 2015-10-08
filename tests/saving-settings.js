@@ -46,7 +46,7 @@ describe('saving settings', function() {
     storageTest('fruits')
     clock.tick(100)
 
-    testEl.querySelector('th:nth-child(3)').classList.contains('frypan-filtered').should.be.true
+    testEl.querySelector('th:nth-child(3)').should.have.class('frypan-filtered')
     attributesFor('thead th', 'aria-sort').should.deep.equal([undefined, 'ascending', undefined])
     textNodesFor('tbody td span em').should.deep.equal(['nan'])
   })
@@ -73,7 +73,7 @@ describe('saving settings', function() {
     clock.tick(100)
 
     settings.should.have.been.calledOnce.and.calledWith()
-    testEl.querySelector('th:nth-child(3)').classList.contains('frypan-filtered').should.be.true
+    testEl.querySelector('th:nth-child(3)').should.have.class('frypan-filtered')
     attributesFor('thead th', 'aria-sort').should.deep.equal([undefined, 'ascending', undefined])
     textNodesFor('tbody td span em').should.deep.equal(['nan'])
   })
