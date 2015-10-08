@@ -12,7 +12,7 @@ describe('virtualization', function() {
   it('should not virtualize when the frypan element does not scroll', function() {
     document.styleSheets[0].deleteRule(1)
     testSetup('data: data', { data: fruits })
-    
+
     getComputedStyle(testEl.querySelector('thead')).position.should.equal('static')
     testEl.querySelector('tbody:not(.frypan-top-spacer):not(.frypan-bottom-spacer)').offsetHeight.should.be.above(1000)
 
@@ -87,7 +87,7 @@ describe('virtualization', function() {
     testSetup('data: data', { data: fruits })
 
     var tbody = testEl.querySelector('tbody:not(.frypan-top-spacer):not(.frypan-bottom-spacer)')
-   
+
     tbody.querySelectorAll('tr.frypan-odd').length.should.equal(5)
     tbody.querySelector('tr:first-child').should.not.have.class('frypan-odd')
     tbody.querySelector('tr:nth-child(2)').should.have.class('frypan-odd')
@@ -138,4 +138,30 @@ describe('virtualization', function() {
     newWidths[1].should.not.equal(thWidths[1])
     cssWidths('colgroup col').should.deep.equal(newWidths)
   })
+
+  if (window.MutationObserver.toString() === 'function MutationObserver() { [native code] }') {
+    it('should release widths to let the grid naturally resize when not using resziable columns', function(done) {
+      testSetup('data: data', { data: fruits })
+
+      var widthChanges = 0
+      observer = new MutationObserver(function(mutations) {
+        mutations.forEach(function(mutation) {
+          if (mutation.target.tagName === 'TH' && mutation.attributeName === 'style') widthChanges++
+          if (widthChanges > 4) done()
+        })
+      })
+      observer.observe(testEl.querySelector('thead'), {
+        subtree: true,
+        attributes: true,
+      })
+
+      var evt = document.createEvent('Events')
+      evt.initEvent('resize', true, true)
+      window.dispatchEvent(evt)
+
+      setTimeout(function() {
+        observer.disconnect()
+      }, 3)
+    })
+  }
 })

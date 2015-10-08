@@ -366,7 +366,7 @@
         grid = bindingContext.$component,
         thead = table.querySelector('thead'),
         td = table.querySelector('tbody td'),
-        rowHeight, sub
+        rowHeight, sub, pegWidthComputed
 
       if (overflowY === 'auto' || overflowY === 'scroll') {
         var
@@ -396,15 +396,21 @@
         }
       }
 
+      function calcThWidths() {
+        var colWidths = Array.prototype.map.call(thead.querySelectorAll('th'), function(th) {
+          return th.offsetWidth
+        })
+        for (var i = 0; i < colWidths.length; i++) {
+          grid.columns()[i].width(colWidths[i])
+        }
+      }
+
       function pegWidths() {
-        ko.computed(function() {
-          var colWidths = Array.prototype.map.call(thead.querySelectorAll('th'), function(th) {
-            return th.offsetWidth
-          })
-          for (var i = 0; i < colWidths.length; i++) {
-            grid.columns()[i].width(colWidths[i])
-          }
-        }, null, { disposeWhenNodeIsRemoved: table })
+        if (!pegWidthComputed) {
+          pegWidthComputed = ko.computed(calcThWidths, null, { disposeWhenNodeIsRemoved: table })
+        } else {
+          calcThWidths()
+        }
         table.style['table-layout'] = 'fixed'
         table.style['border-spacing'] = '0'
         table.style.width = '1px'
@@ -438,9 +444,23 @@
 
         scrollArea.addEventListener('scroll', updateOffset.bind(null, grid))
         window.addEventListener('resize', updateVisibleRowCount)
+        if (!grid.resizableColumns) {
+          window.addEventListener('resize', resizeGrid)
+        }
         ko.utils.domNodeDisposal.addDisposeCallback(table, function() {
           window.removeEventListener('resize', updateVisibleRowCount)
+          window.removeEventListener('resize', resizeGrid)
         })
+      }
+
+      function resizeGrid() {
+        table.style['table-layout'] = ''
+        table.style['border-spacing'] = ''
+        table.style.width = ''
+        thead.style.position = ''
+        grid.columns().forEach(function(c) { c.width(null) })
+        calcThWidths()
+        thead.style.position = 'absolute'
       }
 
       function updateVisibleRowCount() {
