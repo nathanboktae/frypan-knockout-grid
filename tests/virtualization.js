@@ -139,8 +139,10 @@ describe('virtualization', function() {
     cssWidths('colgroup col').should.deep.equal(newWidths)
   })
 
-  if (window.MutationObserver.toString() === 'function MutationObserver() { [native code] }') {
+  if (true/*window.MutationObserver.toString() === 'function MutationObserver() { [native code] }'*/) {
     it('should release widths to let the grid naturally resize when not using resziable columns', function(done) {
+      clock.restore()
+      clock = null
       testSetup('data: data', { data: fruits })
 
       var widthChanges = 0
@@ -162,6 +164,37 @@ describe('virtualization', function() {
       setTimeout(function() {
         observer.disconnect()
       }, 3)
+    })
+
+    it('should not resize the grid when using resziable columns', function(done) {
+      clock.restore()
+      clock = null
+      testSetup('data: data, resizableColumns: true', { data: fruits })
+
+      var widthChanges = 0
+      observer = new MutationObserver(function(mutations) {
+        mutations.forEach(function(mutation) {
+          if (mutation.target.tagName === 'TH' && mutation.attributeName === 'style') {
+            clearTimeout(complete)
+            done(new Error('a <th> width was changed when it should not have'))
+          }
+        })
+      })
+      observer.observe(testEl.querySelector('thead'), {
+        subtree: true,
+        attributes: true,
+      })
+
+      var evt = document.createEvent('Events')
+      evt.initEvent('resize', true, true)
+      window.dispatchEvent(evt)
+
+      setTimeout(function() {
+        observer.disconnect()
+      }, 3)
+      var complete = setTimeout(function() {
+        done()
+      }, 20)
     })
   }
 })

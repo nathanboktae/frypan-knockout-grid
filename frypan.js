@@ -565,7 +565,7 @@
         }
         document.body.addEventListener('click', closeFiltersIfNeeded)
         ko.utils.domNodeDisposal.addDisposeCallback(componentInfo.element, function() {
-          document.body.removeEventListener(closeFiltersIfNeeded)
+          document.body.removeEventListener('click', closeFiltersIfNeeded)
         })
 
         return frypan

@@ -11,7 +11,7 @@
 - Column sorting
 - Column filtering
 - Searching
-- Automatic Virtualization if needed
+- Automatic Virtualization if needed, with automatic resizing
 - Infinite Scrolling
 - Custom column templates, with built-in one for link rendering
 - Column resizing

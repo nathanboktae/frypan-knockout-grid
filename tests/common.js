@@ -61,7 +61,7 @@ pollUntilPassing = function(fn) {
         reject(e)
       }
     }
-  } 
+  }
   setTimeout(attempt, 10)
 
   return new Promise(function(r, rj) {
