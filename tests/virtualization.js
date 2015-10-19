@@ -139,7 +139,7 @@ describe('virtualization', function() {
     cssWidths('colgroup col').should.deep.equal(newWidths)
   })
 
-  if (true/*window.MutationObserver.toString() === 'function MutationObserver() { [native code] }'*/) {
+  if (window.MutationObserver && window.MutationObserver.toString() === 'function MutationObserver() { [native code] }') {
     it('should release widths to let the grid naturally resize when not using resziable columns', function(done) {
       clock.restore()
       clock = null
