@@ -4,7 +4,7 @@
   } else if (typeof exports === 'object' && typeof module === 'object') {
     module.exports = factory
   } else {
-    factory(ko)
+    window.Frypan = factory(ko)
   }
 })(function(ko) {
 
@@ -31,7 +31,7 @@
     grid.visibleRowCount = ko.observable(500)
     grid.sortedItems = ko.observableArray([]) // sync data sources replaces this with a computed
     ;['loadingHtml', 'filterToggleTemplate', 'rowClick', 'rowClass', 'resizableColumns'].forEach(function(p) {
-      grid[p] = params[p]
+      if (p in params) grid[p] = params[p]
     })
 
     if (!Array.isArray(ko.unwrap(params.columns))) {
@@ -190,7 +190,7 @@
       }, 1)
     } else {
       var filteredItems = computed(function() {
-        var items = ko.unwrap(params.data),
+        var items = ko.unwrap(params.$raw.data()),
             columns = grid.columns(),
             searchTerm = ko.unwrap(grid.searchTerm)
 
@@ -527,7 +527,7 @@
     }
   }
 
-  return ko.components.register('frypan', {
+  ko.components.register('frypan', {
     template: '<div class="frypan-scroll-area">\
 <table>\
   <colgroup data-bind="foreach: $component.columns"><col data-bind="style: { width: $data.width() && $data.width() + \'px\' }"></col></colgroup>\
@@ -573,4 +573,6 @@
     },
     synchronous: true
   })
+
+  return Frypan
 })

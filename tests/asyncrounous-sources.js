@@ -22,6 +22,9 @@ describe('asyncrounous sources', function() {
       data: dataRequest
     }, testEl)
   }
+  afterEach(function() {
+    delete Frypan.prototype.loadingHtml
+  })
 
   it('should render data resolved by the promise', function() {
     typicalAsyncTest()
@@ -53,6 +56,24 @@ describe('asyncrounous sources', function() {
 
     testEl.querySelector('div.frypan-loader').should.have.class('frypan-loading')
     testEl.querySelector('.frypan-loader').textContent.should.equal('Loading!')
+  })
+
+  it('should allow extending the prototype to use a default loading html', function() {
+    Frypan.prototype.loadingHtml = '<span>loading...</span>'
+
+    testEl = document.createElement('div')
+    testEl.innerHTML = '<frypan params="data: data"></frypan>'
+    document.body.appendChild(testEl)
+
+    ko.applyBindings({
+      data: function() {
+        return new Promise(function() {})
+      }
+    }, testEl)
+
+    textNodesFor('tbody tr td').should.be.empty
+    testEl.querySelector('div.frypan-loader').should.have.class('frypan-loading')
+    testEl.querySelector('.frypan-loader span').textContent.should.equal('loading...')
   })
 
   it('should show a loading div while data is loading', function() {
