@@ -557,6 +557,18 @@
           params.loadingHtml = loadingTemplate.innerHTML
         }
 
+        componentInfo.templateNodes.filter(function(n) {
+          return n.tagName === 'FRYPAN-COLUMN'
+        }).forEach(function(n, idx) {
+          var colName = n.getAttribute('name'),
+          col = colName ? params.columns.filter(function(c) { return c.name === colName })[0] : params.columns[idx]
+          if (col) {
+            col.template = n.innerHTML
+          } else {
+            params.columns.push({ name: colName, template: n.innerHTML })
+          }
+        })
+
         var frypan = new Frypan(params),
         closeFiltersIfNeeded = function(e) {
           if (e.target && !componentInfo.element.contains(e.target)) {

@@ -1,4 +1,4 @@
-describe('cell templates', function() {
+describe('column templates', function() {
   describe('text', function() {
     it('should render the property of the row item if a string', function() {
       testSetup({
@@ -41,8 +41,21 @@ describe('cell templates', function() {
 
       textNodesFor('tbody tr td').should.deep.equal(['0: apples do not need peeling', '1: bananas need peeling'])
     })
+  })
 
-    it('should be able to provide a custom template', function() {
+  describe('custom', function() {
+    customColTemplateTest = function(cols, html) {
+      testEl = document.createElement('frypan')
+      testEl.setAttribute('params', 'columns: columns, data: data')
+      testEl.innerHTML = html
+      document.body.appendChild(testEl)
+      ko.applyBindings({
+        columns: cols,
+        data: fruits
+      }, testEl)
+    }
+
+    it('should be providable via params', function() {
       testSetup({
         columns: [{
           template: '<dl><dt data-bind="text: $data.fruit"></dt><dd data-bind="text: $data.color"></dd></dl>'
@@ -52,6 +65,45 @@ describe('cell templates', function() {
 
       textNodesFor('tbody td dt').should.deep.equal(['apple', 'banana'])
       textNodesFor('tbody td dd').should.deep.equal(['red', 'yellow'])
+    })
+
+    it('should be providable via a child template by matching indexes', function() {
+      customColTemplateTest([{
+        name: 'fruit'
+      }, {
+        name: 'color'
+      }],
+      '<frypan-column><span class="fruit" data-bind="text: fruit"></span></frypan-column>\
+      <frypan-column><span class="color" data-bind="text: color"></span></frypan-column>')
+
+      textNodesFor('tbody td:first-child span').should.deep.equal(['apple', 'banana'])
+      textNodesFor('tbody td:nth-child(2) span').should.deep.equal(['red', 'yellow'])
+    })
+
+    it('should be providable via a child template by matching names', function() {
+      customColTemplateTest([{
+        name: 'fruit',
+        text: 'fruit'
+      }, {
+        name: 'color'
+      }],
+      '<frypan-column name="color"><span class="color" data-bind="text: color"></span></frypan-column>')
+
+      textNodesFor('tbody td:first-child').should.deep.equal(['apple', 'banana'])
+      textNodesFor('tbody td:first-child span.color').should.be.empty
+      textNodesFor('tbody td:nth-child(2) span.color').should.deep.equal(['red', 'yellow'])
+    })
+
+    it('should be able to provide complete column definitions via a child template', function() {
+      customColTemplateTest([{
+        name: 'fruit',
+        text: 'fruit'
+      }],
+      '<frypan-column name="color"><span class="color" data-bind="text: color"></span></frypan-column>')
+
+      textNodesFor('tbody td:first-child').should.deep.equal(['apple', 'banana'])
+      textNodesFor('tbody td:first-child span.color').should.be.empty
+      textNodesFor('tbody td:nth-child(2) span.color').should.deep.equal(['red', 'yellow'])
     })
   })
 
