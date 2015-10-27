@@ -94,7 +94,7 @@ describe('column templates', function() {
       textNodesFor('tbody td:nth-child(2) span.color').should.deep.equal(['red', 'yellow'])
     })
 
-    it('should be able to provide complete column definitions via a child template', function() {
+    it('should be able to provide a complete column definition via a child template', function() {
       customColTemplateTest([{
         name: 'fruit',
         text: 'fruit'
@@ -103,6 +103,16 @@ describe('column templates', function() {
 
       textNodesFor('tbody td:first-child').should.deep.equal(['apple', 'banana'])
       textNodesFor('tbody td:first-child span.color').should.be.empty
+      textNodesFor('tbody td:nth-child(2) span.color').should.deep.equal(['red', 'yellow'])
+    })
+
+
+    it('should be able to provide all column definitions via a child template', function() {
+      customColTemplateTest(null,
+      '<frypan-column name="fruit"><span class="fruit" data-bind="text: fruit"></span></frypan-column>' +
+      '<frypan-column name="color"><span class="color" data-bind="text: color"></span></frypan-column>')
+
+      textNodesFor('tbody td:first-child span.fruit').should.deep.equal(['apple', 'banana'])
       textNodesFor('tbody td:nth-child(2) span.color').should.deep.equal(['red', 'yellow'])
     })
   })
