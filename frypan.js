@@ -1,8 +1,8 @@
 (function(factory) {
   if (typeof define === 'function' && define.amd) {
-    define(['knockout'], factory)
+    define(['knockout', 'knockout-css3-animation'], factory)
   } else if (typeof exports === 'object' && typeof module === 'object') {
-    module.exports = factory
+    module.exports = factory(require('knockout'), require('knockout-css3-animation'))
   } else {
     window.Frypan = factory(ko)
   }
@@ -269,8 +269,7 @@
   }
   Frypan.prototype.headerClassFor = function(col, colIdx) {
     return (getVal.call(this, 'class', col) || '') +
-      (col.filterValue && col.filterValue() ? ' frypan-filtered' : '') +
-      (this.showFilters() === colIdx ? ' frypan-filter-open' : '')
+      (col.filterValue && col.filterValue() ? ' frypan-filtered' : '')
   }
   Frypan.prototype.linkFor = function(col, item, rowIdx) {
     return getVal.call(this, 'link', col, item, rowIdx)
@@ -532,7 +531,7 @@
 <table>\
   <colgroup data-bind="foreach: $component.columns"><col data-bind="style: { width: $data.width() && $data.width() + \'px\' }"></col></colgroup>\
   <thead data-bind="style: { width: $component.width() + \'px\' }"><tr data-bind="foreach: $component.columns">\
-    <th data-bind="css: $component.headerClassFor($data, $index()), attr: { \'aria-sort\': $component.ariaSortForCol($data) }, style: { width: $data.width() && $data.width() + \'px\' }">\
+    <th data-bind="css: $component.headerClassFor($data, $index()), animation: { when: $component.showFilters() === $index(), class: \'frypan-filter-open\', enter: \'frypan-filter-opening\', exit: \'frypan-filter-closing\' }, attr: { \'aria-sort\': $component.ariaSortForCol($data) }, style: { width: $data.width() && $data.width() + \'px\' }">\
       <a href="" class="frypan-sort-toggle" data-bind="text: name, click: $component.toggleSort.bind($component)"></a>\
       <!-- ko if: $data.filterTemplateNodes -->\
         <a href="" class="frypan-filter-toggle" data-bind="frypanFilter:true"></a>\

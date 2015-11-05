@@ -28,5 +28,8 @@
     "frypan"
   ],
   "author": "Nathan Black <nathan@nathanblack.org>",
-  "license": "ISC"
+  "license": "ISC",
+  "dependencies": {
+    "knockout-css3-animation": "^0.1.1"
+  }
 }

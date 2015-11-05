@@ -63,19 +63,21 @@ describe('filtering', function() {
     testEl.querySelector('th:nth-child(3)').should.not.have.class('frypan-filter-open')
 
     click('a.frypan-filter-toggle')
-    testEl.querySelector('th:nth-child(3)').should.have.class('frypan-filter-open')
+    testEl.querySelector('th:nth-child(3)').should.have.class('frypan-filter-open').and.class('frypan-filter-opening')
   })
 
   it('should close the filter when the user clicks outside the grid', function() {
     setFilterTest()
     click('a.frypan-filter-toggle')
-    testEl.querySelector('th:nth-child(3)').should.have.class('frypan-filter-open')
+    var filterToggle = testEl.querySelector('th:nth-child(3)')
+    filterToggle.should.have.class('frypan-filter-open').and.class('frypan-filter-opening')
 
     click('frypan tr:first-child td:first-child')
-    testEl.querySelector('th:nth-child(3)').should.have.class('frypan-filter-open')
+    filterToggle.should.have.class('frypan-filter-open')
 
     click('#mocha')
-    testEl.querySelector('th:nth-child(3)').should.not.have.class('frypan-filter-open')
+    filterToggle.should.not.have.class('frypan-filter-open')
+    filterToggle.should.have.class('frypan-filter-closing')
   })
 
   it('should not filter anything out by default', function() {
