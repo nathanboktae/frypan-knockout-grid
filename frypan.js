@@ -398,9 +398,9 @@
       function calcThWidths() {
         var colWidths = Array.prototype.map.call(thead.querySelectorAll('th'), function(th) {
           return th.offsetWidth
-        })
-        for (var i = 0; i < colWidths.length; i++) {
-          grid.columns()[i].width(colWidths[i])
+        }), columns = grid.columns()
+        for (var i = 0; i < columns.length; i++) {
+          columns[i].width(colWidths[i])
         }
       }
 
