@@ -378,7 +378,7 @@ describe('asyncrounous sources', function() {
       return pollUntilPassing(function() {
         scrollArea.scrollHeight.should.be.above(originalScrollHeight + 20)
       }).then(function() {
-        scrollArea.scrollTop = scrollArea.scrollHeight - scrollArea.offsetHeight
+        scrollArea.scrollTop = scrollArea.scrollHeight - scrollArea.offsetHeight - 5
       }).then(function() {
         return pollUntilPassing(function() {
           testEl.querySelectorAll('tbody tr').length.should.be.above(7)
