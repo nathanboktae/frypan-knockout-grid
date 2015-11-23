@@ -13,12 +13,11 @@
     "grunt-saucelabs": "^8.6.1",
     "knockout": "^3.3.0",
     "mocha": "^2.2.5",
-    "mocha-phantomjs": "^4.0.1",
     "sinon-browser-only": "^1.12.1",
     "sinon-chai": "^2.8.0"
   },
   "scripts": {
-    "test": "mocha-phantomjs tests/tests.html && (node -e \"require('grunt').tasks(['test']);\" || true)"
+    "test": "node -e \"require('grunt').tasks(['test']);\""
   },
   "keywords": [
     "grid",
