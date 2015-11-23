@@ -463,7 +463,7 @@
       }
 
       function updateVisibleRowCount() {
-        var visibleRowCount = Math.ceil((scrollArea.clientHeight - thead.offsetHeight - 1) / rowHeight) + 2
+        var visibleRowCount = Math.ceil((scrollArea.clientHeight - thead.offsetHeight - 1) / rowHeight) + 1
         grid.visibleRowCount(visibleRowCount)
       }
 
@@ -474,7 +474,7 @@
 
         grid.offset(offset)
         topSpacer.style.height = topSpacerHeight + 'px'
-        bottomSpacer.style.height = (Math.max(0, grid.sortedItems().length - offset - grid.visibleRowCount()) * rowHeight) + 'px'
+        bottomSpacer.style.height = Math.max(0, (grid.sortedItems().length - offset - grid.visibleRowCount()) * rowHeight) + 'px'
         thead.style.left = -scrollArea.scrollLeft + 'px'
       }
     }

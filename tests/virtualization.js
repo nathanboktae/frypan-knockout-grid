@@ -54,7 +54,7 @@ describe('virtualization', function() {
 
     thead = testEl.querySelector('thead')
     testEl.querySelector('.frypan-top-spacer').offsetHeight.should.be.above(19).and.below(22)
-    testEl.querySelector('.frypan-bottom-spacer').offsetHeight.should.be.above(1819).and.below(1822)
+    testEl.querySelector('.frypan-bottom-spacer').offsetHeight.should.be.above(1839).and.below(1842)
   })
 
   it('should update the spacers and offset when the user scrolls', function() {
@@ -70,13 +70,13 @@ describe('virtualization', function() {
     scrollArea.scrollTop = 171
     return pollUntilPassing(function() {
       topSpacer.offsetHeight.should.equal(randomOf(180, 181))
-      bottomSpacer.offsetHeight.should.equal(randomOf(1660, 1661))
+      bottomSpacer.offsetHeight.should.equal(randomOf(1680, 1681))
     }).then(function() {
       scrollArea.scrollTop = 320
     }).then(function() {
       return pollUntilPassing(function() {
         [320, 340, 341].some(function(x) { return topSpacer.offsetHeight == x }).should.be.true;
-        [1500, 1520, 1521].some(function(x) { return bottomSpacer.offsetHeight == x }).should.be.true
+        [1520, 1540, 1561].some(function(x) { return bottomSpacer.offsetHeight == x }).should.be.true
       })
     })
   })
@@ -106,12 +106,12 @@ describe('virtualization', function() {
     fruits = ko.observableArray(fruits)
     testSetup('data: data', { data: fruits })
     var bottomSpacer = testEl.querySelector('.frypan-bottom-spacer')
-    bottomSpacer.offsetHeight.should.equal(1820)
+    bottomSpacer.offsetHeight.should.equal(1840)
 
     addFruits(1)
     clock.tick(100)
 
-    bottomSpacer.offsetHeight.should.equal(1840)
+    bottomSpacer.offsetHeight.should.equal(1860)
   })
 
   function cssWidths(selector) {
