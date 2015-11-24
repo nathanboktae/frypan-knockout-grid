@@ -145,17 +145,19 @@ describe('virtualization', function() {
       clock = null
       testSetup('data: data', { data: fruits })
 
-      var widthChanges = 0
+      var widthChanges = 0, tableChanged
       observer = new MutationObserver(function(mutations) {
         mutations.forEach(function(mutation) {
           if (mutation.target.tagName === 'TH' && mutation.attributeName === 'style') widthChanges++
-          if (widthChanges > 4) done()
+          if (mutation.target.tagName === 'TABLE' && /px/.test(mutation.target.style.width)) tableChanged = true
+          if (tableChanged && widthChanges > 4) done()
         })
       })
       observer.observe(testEl.querySelector('thead'), {
         subtree: true,
         attributes: true,
       })
+      observer.observe(testEl.querySelector('table'), { attributes: true })
 
       var evt = document.createEvent('Events')
       evt.initEvent('resize', true, true)

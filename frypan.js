@@ -396,11 +396,15 @@
       }
 
       function calcThWidths() {
-        var colWidths = Array.prototype.map.call(thead.querySelectorAll('th'), function(th) {
+        var thWidths = Array.prototype.map.call(thead.querySelectorAll('th'), function(th) {
           return th.offsetWidth
-        }), columns = grid.columns()
+        }),
+        tdWidths = Array.prototype.map.call(tbody.querySelectorAll('tr:first-child td'), function(td) {
+          return td.offsetWidth
+        }),
+        columns = grid.columns()
         for (var i = 0; i < columns.length; i++) {
-          columns[i].width(colWidths[i])
+          columns[i].width(Math.max(thWidths[i], tdWidths[i]))
         }
       }
 
@@ -459,6 +463,7 @@
         thead.style.position = ''
         grid.columns().forEach(function(c) { c.width(null) })
         calcThWidths()
+        table.style.width = grid.columns().reduce(function(sum, c) { return sum + c.width() }, 0) + 'px'
         thead.style.position = 'absolute'
       }
 
