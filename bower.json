@@ -7,7 +7,7 @@
   ],
   "dependencies": {
     "knockout": "^3.3.0",
-    "knockout-css3-animation": "^0.1.1"
+    "knockout-css3-animation": ">= 0.1.1"
   },
   "description": "A light-weight yet powerful knockout component grid with a simple, functional composition style API",
   "moduleType": [
