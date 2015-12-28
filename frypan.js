@@ -474,7 +474,7 @@
 
       function updateOffset(grid) {
         var
-          offset = Math.floor(scrollArea.scrollTop / rowHeight),
+          offset = Math.floor(Math.max(0, scrollArea.scrollTop) / rowHeight),
           topSpacerHeight = (offset * rowHeight) + thead.offsetHeight
 
         grid.offset(offset)
