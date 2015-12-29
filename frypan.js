@@ -404,7 +404,7 @@
         }),
         columns = grid.columns()
         for (var i = 0; i < columns.length; i++) {
-          columns[i].width(Math.max(thWidths[i], tdWidths[i]))
+          columns[i].width(Math.max(thWidths[i] || 0, tdWidths[i] || 0))
         }
       }
 
