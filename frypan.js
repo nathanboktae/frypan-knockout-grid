@@ -446,13 +446,32 @@
         }, null, { disposeWhenNodeIsRemoved: tbody })
 
         scrollArea.addEventListener('scroll', updateOffset.bind(null, grid))
-        window.addEventListener('resize', updateVisibleRowCount)
-        if (!grid.resizableColumns) {
-          window.addEventListener('resize', resizeGrid)
+
+        var pendingResize, sizeAtStart = window.innerWidth,
+        resizeListener = function (e) {
+          updateVisibleRowCount()
+          if (!grid.resizableColumns) {
+            resizeGrid()
+          } else {
+            if (pendingResize) {
+              clearTimeout(pendingResize)
+            }
+            pendingResize = setTimeout(function() {
+              pendingResize = null
+              var delta = window.innerWidth - sizeAtStart
+              sizeAtStart = window.innerWidth
+
+              for (var len = grid.columns().length, d = Math.floor(delta / len), i = 0; i < len; i++) {
+                var w = grid.columns()[i].width
+                w(w() + d + (i === 0 ? delta % len : 0))
+              }
+            }, 100)
+          }
         }
+        window.addEventListener('resize', resizeListener)
+
         ko.utils.domNodeDisposal.addDisposeCallback(table, function() {
-          window.removeEventListener('resize', updateVisibleRowCount)
-          window.removeEventListener('resize', resizeGrid)
+          window.removeEventListener('resize', resizeListener)
         })
       }
 

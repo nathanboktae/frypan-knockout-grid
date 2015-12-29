@@ -168,7 +168,7 @@ describe('virtualization', function() {
       }, 3)
     })
 
-    it('should not resize the grid when using resziable columns', function(done) {
+    it('should not naturally resize the grid when using resizable columns', function(done) {
       clock.restore()
       clock = null
       testSetup('data: data, resizableColumns: true', { data: fruits })
