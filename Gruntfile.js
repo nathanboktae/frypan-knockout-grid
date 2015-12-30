@@ -34,7 +34,7 @@ module.exports = function(grunt) {
           }, {
             browserName:"android",
             platform: "Linux",
-            version: "4.0"
+            version: "5.1"
           }, {
             browserName: 'googlechrome',
             platform: 'linux'
