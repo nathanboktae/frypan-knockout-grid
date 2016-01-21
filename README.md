@@ -1,5 +1,7 @@
 ## Frypan
 
+[![Join the chat at https://gitter.im/nathanboktae/frypan-knockout-grid](https://badges.gitter.im/nathanboktae/frypan-knockout-grid.svg)](https://gitter.im/nathanboktae/frypan-knockout-grid?utm_source=badge&utm_medium=badge&utm_campaign=pr-badge&utm_content=badge)
+
 ### A lightweight and powerful data grid for Knockout
 
 [![SauceLabs Test Status](https://saucelabs.com/browser-matrix/frypan-knockout-grid.svg)](https://saucelabs.com/u/frypan-knockout-grid)
