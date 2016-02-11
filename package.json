@@ -1,6 +1,6 @@
 {
   "name": "frypan-knockout-grid",
-  "version": "0.5.5",
+  "version": "0.5.6",
   "description": "A light-weight yet powerful knockout component grid with a simple, functional composition style API",
   "main": "frypan.js",
   "devDependencies": {

@@ -14,6 +14,7 @@ describe('virtualization', function() {
     testSetup('data: data', { data: fruits })
 
     getComputedStyle(testEl.querySelector('thead')).position.should.equal('static')
+    testEl.should.not.have.class('frypan-virtualized')
     testEl.querySelector('tbody:not(.frypan-top-spacer):not(.frypan-bottom-spacer)').offsetHeight.should.be.above(1000)
 
     document.styleSheets[0].insertRule('frypan { display: block; width: 300px; height: 200px; overflow: auto }', 1);
@@ -22,9 +23,11 @@ describe('virtualization', function() {
   it('should float the header', function() {
     testSetup('data: data', { data: fruits })
     var style = getComputedStyle(testEl.querySelector('thead'))
+
     style.position.should.equal('absolute')
     style.left.should.equal('0px')
     style.top.should.equal('0px')
+    testEl.should.have.class('frypan-virtualized')
   })
 
   it('should adjust the header when the user scrolls horizontally', function() {
@@ -52,7 +55,7 @@ describe('virtualization', function() {
   it('should have an initial offset of 0 and top and bottom spacers calculated correctly', function() {
     testSetup('data: data', { data: fruits })
 
-    thead = testEl.querySelector('thead')
+    var thead = testEl.querySelector('thead')
     testEl.querySelector('.frypan-top-spacer').offsetHeight.should.be.above(19).and.below(22)
     testEl.querySelector('.frypan-bottom-spacer').offsetHeight.should.be.above(1839).and.below(1842)
   })
@@ -145,7 +148,7 @@ describe('virtualization', function() {
       clock = null
       testSetup('data: data', { data: fruits })
 
-      var widthChanges = 0, tableChanged, doneCalled
+      var widthChanges = 0, tableChanged, doneCalled,
       observer = new MutationObserver(function(mutations) {
         mutations.forEach(function(mutation) {
           if (mutation.target.tagName === 'TH' && mutation.attributeName === 'style') widthChanges++
@@ -177,7 +180,7 @@ describe('virtualization', function() {
       testSetup('data: data, resizableColumns: true', { data: fruits })
 
       var widthChanges = 0
-      observer = new MutationObserver(function(mutations) {
+      var observer = new MutationObserver(function(mutations) {
         mutations.forEach(function(mutation) {
           if (mutation.target.tagName === 'TH' && mutation.attributeName === 'style') {
             clearTimeout(complete)

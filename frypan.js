@@ -71,8 +71,8 @@
         if (!template) {
           template = col.link ? '<a data-bind="attr: { href: $component.linkFor($col, $data, $index) }, css: $component.classFor($col, $data, $index)"><span data-bind="frypanText: $component.textFor($col, $data, $index())"></span></a>' :
             '<span data-bind="frypanText: $component.textFor($col, $data, $index()), css: $component.classFor($col, $data, $index)"></span>'
-          template = template.replace(/\$col/g, '$component.columns()[' + idx + ']')
         }
+        template = template.replace(/\$col/g, '$component.columns()[' + idx + ']')
         col.templateNode = document.createElement('td')
         col.templateNode.innerHTML = template
         return col
@@ -439,6 +439,7 @@
         thead.style.position = 'absolute'
         thead.style.top = 0
         thead.style.left = 0
+        frypan.classList.add('frypan-virtualized')
 
         updateVisibleRowCount()
         ko.computed(function() {
@@ -463,7 +464,7 @@
 
               for (var len = grid.columns().length, d = Math.floor(delta / len), i = 0; i < len; i++) {
                 var w = grid.columns()[i].width
-                w(w() + d + (i === 0 ? delta % len : 0))
+                w(Math.max(w() + d + (i === 0 ? delta % len : 0), ko.unwrap(grid.minColWidth) || 40))
               }
             }, 100)
           }
@@ -480,10 +481,12 @@
         table.style['border-spacing'] = ''
         table.style.width = ''
         thead.style.position = ''
+        frypan.classList.remove('frypan-virtualized')
         grid.columns().forEach(function(c) { c.width(null) })
         calcThWidths()
         table.style.width = grid.columns().reduce(function(sum, c) { return sum + c.width() }, 0) + 'px'
         thead.style.position = 'absolute'
+        frypan.classList.add('frypan-virtualized')
       }
 
       function updateVisibleRowCount() {
@@ -505,7 +508,7 @@
   }
 
   ko.bindingHandlers.frypanResizer = {
-    init: function(element, valueAccessor, __, ___, bindingContext) {
+    init: function(element, valueAccessor) {
       element.addEventListener('mousedown', function(downEvent) {
         downEvent.preventDefault()
         element.classList.add('frypan-resizing')
@@ -554,8 +557,7 @@
     template: '<div class="frypan-scroll-area">\
 <table>\
   <colgroup data-bind="foreach: $component.columns"><col data-bind="style: { width: $data.width() && $data.width() + \'px\' }"></col></colgroup>\
-  <thead data-bind="style: { width: $component.width() + \'px\' }"><tr data-bind="foreach: $component.columns">\
-    <th data-bind="css: $component.headerClassFor($data, $index()), animation: { when: $component.showFilters() === $index(), class: \'frypan-filter-open\', enter: \'frypan-filter-opening\', exit: \'frypan-filter-closing\' }, attr: { \'aria-sort\': $component.ariaSortForCol($data) }, style: { width: $data.width() && $data.width() + \'px\' }">\
+  <thead data-bind="style: { width: $component.width() + \'px\' }"><tr data-bind="foreach: $component.columns"><th data-bind="css: $component.headerClassFor($data, $index()), animation: { when: $component.showFilters() === $index(), class: \'frypan-filter-open\', enter: \'frypan-filter-opening\', exit: \'frypan-filter-closing\' }, attr: { \'aria-sort\': $component.ariaSortForCol($data) }, style: { width: $data.width() && $data.width() + \'px\' }">\
       <a href="" class="frypan-sort-toggle" data-bind="text: name, click: $component.toggleSort.bind($component)"></a>\
       <!-- ko if: $data.filterTemplateNodes -->\
         <a href="" class="frypan-filter-toggle" data-bind="frypanFilter:true"></a>\
