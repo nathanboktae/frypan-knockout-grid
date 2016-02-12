@@ -407,7 +407,6 @@
           frypan.classList.remove('frypan-virtualized')
           grid.columns().forEach(function(c) { c.width(null) })
         }
-        table.style.width = ''
 
         var thWidths = Array.prototype.map.call(thead.querySelectorAll('th'), function(th) {
           return th.offsetWidth
@@ -420,9 +419,10 @@
         for (var i = 0; i < columns.length; i++) {
           columns[i].width(Math.max(thWidths[i] || 0, tdWidths[i] || 0))
         }
-        table.style.width = grid.columns().reduce(function(sum, c) { return sum + c.width() }, 0) + 'px'
 
         if (virtualized) {
+          table.style['table-layout'] = 'fixed'
+          table.style['border-spacing'] = '0'
           thead.style.position = 'absolute'
           frypan.classList.add('frypan-virtualized')
         }
