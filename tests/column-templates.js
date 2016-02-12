@@ -106,6 +106,20 @@ describe('column templates', function() {
       textNodesFor('tbody td:nth-child(2) span.color').should.deep.equal(['red', 'yellow'])
     })
 
+    it('should alias $col as the column reference', function() {
+      customColTemplateTest([{
+        name: 'fruit',
+        template: '<!-- ko text: $col.format($data.fruit) --><!-- /ko -->',
+        format: function(s) { return '--' + s + '--' }
+      }, {
+        name: 'color',
+        format: function(s) { return s.toUpperCase() }
+      }],
+      '<frypan-column name="color"><span class="color" data-bind="text: $col.format($data.color)"></span></frypan-column>')
+
+      textNodesFor('tbody td:first-child').should.deep.equal(['--apple--', '--banana--'])
+      textNodesFor('tbody td:nth-child(2) span.color').should.deep.equal(['RED', 'YELLOW'])
+    })
 
     it('should be able to provide all column definitions via a child template', function() {
       customColTemplateTest(null,

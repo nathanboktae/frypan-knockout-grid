@@ -55,8 +55,8 @@ pollUntilPassing = function(fn) {
       fn()
       resolve()
     } catch(e) {
-      if (tries < 100) {
-        setTimeout(attempt, 10)
+      if (tries < 40) {
+        setTimeout(attempt, 5)
       } else {
         reject(e)
       }

@@ -135,11 +135,19 @@ describe('virtualization', function() {
 
     fruits([{ moon: 'Europa', planet: 'Jupiter' }])
 
-    var newWidths = cssWidths('thead th')
-    newWidths.length.should.equal(2)
-    newWidths[0].should.not.equal(thWidths[0])
-    newWidths[1].should.not.equal(thWidths[1])
-    cssWidths('colgroup col').should.deep.equal(newWidths)
+    var immediateWidths = cssWidths('thead th')
+    immediateWidths.length.should.equal(2)
+    immediateWidths[0].should.be.above(35)
+    immediateWidths[1].should.be.above(40)
+    cssWidths('colgroup col').should.deep.equal(immediateWidths)
+
+    clock.tick(100)
+
+    testEl.querySelectorAll('tbody tr').length.should.equal(1)
+    var afterDataWidths = cssWidths('thead th')
+    afterDataWidths.length.should.equal(2)
+    afterDataWidths[0].should.be.above(immediateWidths[0])
+    afterDataWidths[1].should.be.above(immediateWidths[1])
   })
 
   if (window.MutationObserver && window.MutationObserver.toString() === 'function MutationObserver() { [native code] }') {

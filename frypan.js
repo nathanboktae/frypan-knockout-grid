@@ -27,6 +27,7 @@
     grid.showFilters = params.showFilters || ko.observable()
     grid.sortColumn = params.sortColumn || ko.observable()
     grid.sortAscending = params.sortAscending || ko.observable(true)
+    grid.minColWidth = grid.minColWidth || 40
     grid.offset = ko.observable(0)
     grid.visibleRowCount = ko.observable(500)
     grid.sortedItems = ko.observableArray([]) // sync data sources replaces this with a computed
@@ -365,29 +366,31 @@
         grid = bindingContext.$component,
         thead = table.querySelector('thead'),
         td = table.querySelector('tbody td'),
-        rowHeight, sub, pegWidthComputed
+        rowHeight,
+        waitForFirstItemsSub,
+        recalcOnColChange, recalcOnFirstData,
+        virtualized = overflowY === 'auto' || overflowY === 'scroll'
 
-      if (overflowY === 'auto' || overflowY === 'scroll') {
+      if (virtualized) {
         var
           topSpacer = table.querySelector('.frypan-top-spacer'),
           bottomSpacer = table.querySelector('.frypan-bottom-spacer')
 
         if (!td) {
-          sub = grid.sortedItems.subscribe(function() {
-            var td = table.querySelector('tbody td')
+          waitForFirstItemsSub = grid.sortedItems.subscribe(function() {
+            td = table.querySelector('tbody td')
             if (td) {
-              sub.dispose()
-              setup(td)
+              waitForFirstItemsSub.dispose()
+              setup()
             }
           })
         } else {
-          setup(td)
+          setup()
         }
-      }
-      if (!bottomSpacer && ko.unwrap(grid.resizableColumns)) {
+      } else if (ko.unwrap(grid.resizableColumns)) {
         if (!td) {
-          sub = grid.sortedItems.subscribe(function() {
-            sub.dispose()
+          waitForFirstItemsSub = grid.sortedItems.subscribe(function() {
+            waitForFirstItemsSub.dispose()
             pegWidths()
           })
         } else {
@@ -395,7 +398,17 @@
         }
       }
 
-      function calcThWidths() {
+      function recalcColWidths() {
+        if (virtualized) {
+          // remove virtualization temporarily to include headers and columns together in width calculation
+          table.style['table-layout'] = ''
+          table.style['border-spacing'] = ''
+          thead.style.position = ''
+          frypan.classList.remove('frypan-virtualized')
+          grid.columns().forEach(function(c) { c.width(null) })
+        }
+        table.style.width = ''
+
         var thWidths = Array.prototype.map.call(thead.querySelectorAll('th'), function(th) {
           return th.offsetWidth
         }),
@@ -403,23 +416,39 @@
           return td.offsetWidth
         }),
         columns = grid.columns()
+
         for (var i = 0; i < columns.length; i++) {
           columns[i].width(Math.max(thWidths[i] || 0, tdWidths[i] || 0))
+        }
+        table.style.width = grid.columns().reduce(function(sum, c) { return sum + c.width() }, 0) + 'px'
+
+        if (virtualized) {
+          thead.style.position = 'absolute'
+          frypan.classList.add('frypan-virtualized')
         }
       }
 
       function pegWidths() {
-        if (!pegWidthComputed) {
-          pegWidthComputed = ko.computed(calcThWidths, null, { disposeWhenNodeIsRemoved: table })
-        } else {
-          calcThWidths()
+        if (!recalcOnColChange) {
+          recalcOnColChange = grid.columns.subscribe(function() {
+            recalcColWidths()
+            if (!recalcOnFirstData) {
+              recalcOnFirstData = grid.sortedItems.subscribe(function() {
+                recalcOnFirstData.dispose()
+                recalcOnFirstData = null
+                recalcColWidths()
+              })
+            }
+          })
         }
+        recalcColWidths()
+
         table.style['table-layout'] = 'fixed'
         table.style['border-spacing'] = '0'
         table.style.width = '1px'
       }
 
-      function setup(td) {
+      function setup() {
         rowHeight = td.offsetHeight
         if (frypanStyle.display !== 'flex') {
           scrollArea.style.height = '100%'
@@ -431,28 +460,21 @@
         topSpacer.style.display = 'block'
         bottomSpacer.style.display = 'block'
 
-        // Peg the widths of the columns before we float the table header,
-        // since when we do it will change
         pegWidths()
 
         scrollArea.parentElement.style.position = 'relative'
-        thead.style.position = 'absolute'
         thead.style.top = 0
         thead.style.left = 0
-        frypan.classList.add('frypan-virtualized')
 
         updateVisibleRowCount()
-        ko.computed(function() {
-          updateOffset(grid)
-        }, null, { disposeWhenNodeIsRemoved: tbody })
-
-        scrollArea.addEventListener('scroll', updateOffset.bind(null, grid))
+        ko.computed(updateOffset, null, { disposeWhenNodeIsRemoved: tbody })
+        scrollArea.addEventListener('scroll', updateOffset)
 
         var pendingResize, sizeAtStart = window.innerWidth,
         resizeListener = function (e) {
           updateVisibleRowCount()
           if (!grid.resizableColumns) {
-            resizeGrid()
+            recalcColWidths()
           } else {
             if (pendingResize) {
               clearTimeout(pendingResize)
@@ -464,7 +486,7 @@
 
               for (var len = grid.columns().length, d = Math.floor(delta / len), i = 0; i < len; i++) {
                 var w = grid.columns()[i].width
-                w(Math.max(w() + d + (i === 0 ? delta % len : 0), ko.unwrap(grid.minColWidth) || 40))
+                w(Math.max(w() + d + (i === 0 ? delta % len : 0), ko.unwrap(grid.minColWidth)))
               }
             }, 100)
           }
@@ -472,21 +494,10 @@
         window.addEventListener('resize', resizeListener)
 
         ko.utils.domNodeDisposal.addDisposeCallback(table, function() {
+          recalcOnColChange && recalcOnColChange.dispose()
+          recalcOnFirstData && recalcOnFirstData.dispose()
           window.removeEventListener('resize', resizeListener)
         })
-      }
-
-      function resizeGrid() {
-        table.style['table-layout'] = ''
-        table.style['border-spacing'] = ''
-        table.style.width = ''
-        thead.style.position = ''
-        frypan.classList.remove('frypan-virtualized')
-        grid.columns().forEach(function(c) { c.width(null) })
-        calcThWidths()
-        table.style.width = grid.columns().reduce(function(sum, c) { return sum + c.width() }, 0) + 'px'
-        thead.style.position = 'absolute'
-        frypan.classList.add('frypan-virtualized')
       }
 
       function updateVisibleRowCount() {
@@ -494,7 +505,7 @@
         grid.visibleRowCount(visibleRowCount)
       }
 
-      function updateOffset(grid) {
+      function updateOffset() {
         var
           offset = Math.floor(Math.max(0, scrollArea.scrollTop) / rowHeight),
           topSpacerHeight = (offset * rowHeight) + thead.offsetHeight
@@ -508,7 +519,7 @@
   }
 
   ko.bindingHandlers.frypanResizer = {
-    init: function(element, valueAccessor) {
+    init: function(element, valueAccessor, _, __, bc) {
       element.addEventListener('mousedown', function(downEvent) {
         downEvent.preventDefault()
         element.classList.add('frypan-resizing')
@@ -525,7 +536,7 @@
             cancelAnimationFrame(animationFrameRequest)
           }
           animationFrameRequest = requestAnimationFrame(function() {
-            width(Math.max(15, intialWidth - startMouseX + targetMouseX))
+            width(Math.max(bc.$component.minColWidth, intialWidth - startMouseX + targetMouseX))
           })
           moveEvent.preventDefault()
         }
