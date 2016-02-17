@@ -31,7 +31,7 @@
     grid.offset = ko.observable(0)
     grid.visibleRowCount = ko.observable(500)
     grid.sortedItems = ko.observableArray([]) // sync data sources replaces this with a computed
-    ;['loadingHtml', 'filterToggleTemplate', 'rowClick', 'rowClass', 'resizableColumns'].forEach(function(p) {
+    ;['loadingHtml', 'filterToggleTemplate', 'rowClick', 'rowClass', 'resizableColumns', 'reorderableColumns'].forEach(function(p) {
       if (p in params) grid[p] = params[p]
     })
 
@@ -143,21 +143,35 @@
       }, 5)
 
       var criteria = computed(function() {
-        skip(0)
-        return {
+        var cols = grid.columns(),
+        criteria = {
           searchTerm: ko.unwrap(grid.searchTerm),
-          filters: grid.columns().map(function(col) {
+          filters: cols.map(function(col) {
             return col.filterValue && col.filterValue()
           }),
-          sortColumn: grid.columns().indexOf(grid.sortColumn()) === -1 ? undefined : grid.sortColumn(),
+          sortColumn: cols.indexOf(grid.sortColumn()) === -1 ? undefined : grid.sortColumn(),
           sortAscending: grid.sortAscending()
         }
+
+        if (!cols.reordered) {
+          skip(0)
+        } else {
+          Object.defineProperty(criteria, 'reordered', { value: true })
+          delete cols.reordered
+        }
+        return criteria
       }, 1) // required to avoid recursion when updating items below
 
       grid.outstandingRequest = ko.observable()
       computed(function () {
         var crit = criteria()
         crit.skip = skip() // always take a dependency on these
+
+        if (crit.reordered) {
+          delete crit.reordered
+          return outstandingRequest
+        }
+
         if (!outstandingRequest) {
           outstandingRequest = ko.unwrap(params.data).call(grid, crit)
           if (!outstandingRequest || typeof outstandingRequest.then !== 'function') {
@@ -471,7 +485,7 @@
         scrollArea.addEventListener('scroll', updateOffset)
 
         var pendingResize, sizeAtStart = window.innerWidth,
-        resizeListener = function (e) {
+        resizeListener = function () {
           updateVisibleRowCount()
           if (!grid.resizableColumns) {
             recalcColWidths()
@@ -518,10 +532,25 @@
     }
   }
 
+  function onDrag(el, cb) {
+    el.addEventListener('mousedown', function(downEvent) {
+      downEvent.preventDefault()
+      var opts = cb(downEvent)
+
+      function onMouseUp(e) {
+        opts.up(e)
+        document.removeEventListener('mousemove', opts.move)
+        document.removeEventListener('mouseup', onMouseUp)
+      }
+
+      document.addEventListener('mousemove', opts.move)
+      document.addEventListener('mouseup', onMouseUp)
+    })
+  }
+
   ko.bindingHandlers.frypanResizer = {
     init: function(element, valueAccessor, _, __, bc) {
-      element.addEventListener('mousedown', function(downEvent) {
-        downEvent.preventDefault()
+      onDrag(element, function(downEvent) {
         element.classList.add('frypan-resizing')
 
         var
@@ -530,29 +559,94 @@
           startMouseX = downEvent.pageX,
           targetMouseX, animationFrameRequest
 
-        function onMouseMove(moveEvent) {
-          targetMouseX = moveEvent.pageX
-          if (animationFrameRequest) {
-            cancelAnimationFrame(animationFrameRequest)
+        return {
+          move: function(moveEvent) {
+            targetMouseX = moveEvent.pageX
+            if (animationFrameRequest) {
+              cancelAnimationFrame(animationFrameRequest)
+            }
+            animationFrameRequest = requestAnimationFrame(function() {
+              width(Math.max(bc.$component.minColWidth, intialWidth - startMouseX + targetMouseX))
+            })
+            //moveEvent.preventDefault()
+          },
+          up: function() {
+            if (animationFrameRequest) {
+              cancelAnimationFrame(animationFrameRequest)
+            }
+            element.classList.remove('frypan-resizing')
           }
-          animationFrameRequest = requestAnimationFrame(function() {
-            width(Math.max(bc.$component.minColWidth, intialWidth - startMouseX + targetMouseX))
-          })
-          moveEvent.preventDefault()
         }
-
-        function onMouseUp() {
-          if (animationFrameRequest) {
-            cancelAnimationFrame(animationFrameRequest)
-          }
-          element.classList.remove('frypan-resizing')
-          document.removeEventListener('mousemove', onMouseMove)
-          document.removeEventListener('mouseup', onMouseUp)
-        }
-
-        document.addEventListener('mousemove', onMouseMove)
-        document.addEventListener('mouseup', onMouseUp)
       })
+    }
+  }
+
+  ko.bindingHandlers.frypanReorder = {
+    init: function(element, valueAccessor, allBindingsAccessor, _, bindingContext) {
+      if (ko.unwrap(valueAccessor())) {
+        onDrag(element, function(downEvent) {
+          var bounds = element.getBoundingClientRect(),
+              ghost = element.cloneNode(true)
+
+          ko.cleanNode(ghost)
+          ghost.style.position = 'fixed'
+          ghost.style.top = (bounds.top - downEvent.offsetY) + 'px'
+          ghost.style.left = (bounds.left - downEvent.offsetX) + 'px'
+          ghost.style.width = bounds.width + 'px'
+          ghost.style.height = bounds.height + 'px'
+
+          element.classList.add('frypan-move-source')
+          ghost.classList.add('frypan-move-ghost')
+
+          var hoverTh
+          return {
+            move: function(e) {
+              ghost.style.display = 'none'
+              var hoverEl = document.elementFromPoint(e.pageX, e.pageY)
+              if (hoverEl && hoverEl.closest) {
+                var th = hoverEl.closest('th')
+                if (th !== hoverTh) {
+                  hoverTh && hoverTh.classList.remove('frypan-drop-target')
+                  th && th.classList.add('frypan-drop-target')
+                }
+                hoverTh = th
+              }
+
+              if (!ghost.parentElement) {
+                document.body.appendChild(ghost)
+              }
+              ghost.style.display = ''
+              ghost.style.top = (e.pageY - downEvent.offsetY) + 'px'
+              ghost.style.left = (e.pageX - downEvent.offsetX) + 'px'
+            },
+            up: function() {
+              if (ghost.parentElement) {
+                document.body.removeChild(ghost)
+              }
+              element.classList.remove('frypan-move-source')
+
+              if (hoverTh) {
+                var observable = bindingContext.$component.columns,
+                    items = observable(),
+                    ctx = ko.contextFor(hoverTh)
+                if (ctx) {
+                  var targetItem = ctx.$data,
+                    targetIdx = items.indexOf(targetItem),
+                    souceIdx = items.indexOf(bindingContext.$data)
+
+                  hoverTh.classList.remove('frypan-drop-target')
+                  if (souceIdx !== -1 && targetIdx !== -1) {
+                    items.reordered = true
+                    items.splice(souceIdx, 1, targetItem)
+                    items.splice(targetIdx, 1, bindingContext.$data)
+                    observable.notifySubscribers()
+                  }
+                }
+              }
+            }
+          }
+        })
+      }
     }
   }
 
@@ -568,7 +662,7 @@
     template: '<div class="frypan-scroll-area">\
 <table>\
   <colgroup data-bind="foreach: $component.columns"><col data-bind="style: { width: $data.width() && $data.width() + \'px\' }"></col></colgroup>\
-  <thead data-bind="style: { width: $component.width() + \'px\' }"><tr data-bind="foreach: $component.columns"><th data-bind="css: $component.headerClassFor($data, $index()), animation: { when: $component.showFilters() === $index(), class: \'frypan-filter-open\', enter: \'frypan-filter-opening\', exit: \'frypan-filter-closing\' }, attr: { \'aria-sort\': $component.ariaSortForCol($data) }, style: { width: $data.width() && $data.width() + \'px\' }">\
+  <thead data-bind="style: { width: $component.width() + \'px\' }"><tr data-bind="foreach: $component.columns"><th data-bind="css: $component.headerClassFor($data, $index()), animation: { when: $component.showFilters() === $index(), class: \'frypan-filter-open\', enter: \'frypan-filter-opening\', exit: \'frypan-filter-closing\' }, attr: { \'aria-sort\': $component.ariaSortForCol($data) }, style: { width: $data.width() && $data.width() + \'px\' }, frypanReorder: $component.reorderableColumns">\
       <a href="" class="frypan-sort-toggle" data-bind="text: name, click: $component.toggleSort.bind($component)"></a>\
       <!-- ko if: $data.filterTemplateNodes -->\
         <a href="" class="frypan-filter-toggle" data-bind="frypanFilter:true"></a>\
