@@ -156,7 +156,7 @@
         if (!cols.reordered) {
           skip(0)
         } else {
-          Object.defineProperty(criteria, 'reordered', { value: true })
+          Object.defineProperty(criteria, 'reordered', { value: true, configurable: true })
           delete cols.reordered
         }
         return criteria
@@ -543,8 +543,10 @@
         document.removeEventListener('mouseup', onMouseUp)
       }
 
-      document.addEventListener('mousemove', opts.move)
-      document.addEventListener('mouseup', onMouseUp)
+      if (opts) {
+        document.addEventListener('mousemove', opts.move)
+        document.addEventListener('mouseup', onMouseUp)
+      }
     })
   }
 
@@ -568,7 +570,6 @@
             animationFrameRequest = requestAnimationFrame(function() {
               width(Math.max(bc.$component.minColWidth, intialWidth - startMouseX + targetMouseX))
             })
-            //moveEvent.preventDefault()
           },
           up: function() {
             if (animationFrameRequest) {
@@ -585,6 +586,10 @@
     init: function(element, valueAccessor, allBindingsAccessor, _, bindingContext) {
       if (ko.unwrap(valueAccessor())) {
         onDrag(element, function(downEvent) {
+          if (downEvent.target.classList && downEvent.target.classList.contains('frypan-resizer')) {
+            return
+          }
+
           var bounds = element.getBoundingClientRect(),
               ghost = element.cloneNode(true)
 
@@ -606,8 +611,8 @@
               if (hoverEl && hoverEl.closest) {
                 var th = hoverEl.closest('th')
                 if (th !== hoverTh) {
-                  hoverTh && hoverTh.classList.remove('frypan-drop-target')
-                  th && th.classList.add('frypan-drop-target')
+                  hoverTh && hoverTh.classList.remove('frypan-move-target')
+                  th && th.classList.add('frypan-move-target')
                 }
                 hoverTh = th
               }
@@ -629,16 +634,17 @@
                 var observable = bindingContext.$component.columns,
                     items = observable(),
                     ctx = ko.contextFor(hoverTh)
+
+                hoverTh.classList.remove('frypan-move-target')
                 if (ctx) {
                   var targetItem = ctx.$data,
                     targetIdx = items.indexOf(targetItem),
-                    souceIdx = items.indexOf(bindingContext.$data)
+                    sourceIdx = items.indexOf(bindingContext.$data)
 
-                  hoverTh.classList.remove('frypan-drop-target')
-                  if (souceIdx !== -1 && targetIdx !== -1) {
-                    items.reordered = true
-                    items.splice(souceIdx, 1, targetItem)
-                    items.splice(targetIdx, 1, bindingContext.$data)
+                  if (sourceIdx !== -1 && targetIdx !== -1) {
+                    Object.defineProperty(items, 'reordered', { value: true, configurable: true })
+                    items.splice(sourceIdx, 1)
+                    items.splice(targetIdx > sourceIdx ? targetIdx - 1 : targetIdx, 0, bindingContext.$data)
                     observable.notifySubscribers()
                   }
                 }
