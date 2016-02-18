@@ -31,7 +31,7 @@
     grid.offset = ko.observable(0)
     grid.visibleRowCount = ko.observable(500)
     grid.sortedItems = ko.observableArray([]) // sync data sources replaces this with a computed
-    ;['loadingHtml', 'filterToggleTemplate', 'rowClick', 'rowClass', 'resizableColumns', 'reorderableColumns'].forEach(function(p) {
+    ;['loadingHtml', 'filterToggleTemplate', 'rowClick', 'rowClass', 'resizableColumns'].forEach(function(p) {
       if (p in params) grid[p] = params[p]
     })
 
@@ -79,6 +79,19 @@
         return col
       })
     })
+
+    if (params.reorderableColumns) {
+      var reordered
+      grid.reorder = function(sourceIdx, targetIdx) {
+        var observable = ko.isWritableObservable(params.columns) ? params.columns : grid.columns,
+            items = observable(),
+            removed = items.splice(sourceIdx, 1)
+
+        items.splice(targetIdx > sourceIdx ? targetIdx - 1 : targetIdx, 0, removed[0])
+        reordered = true
+        observable.notifySubscribers()
+      }
+    }
 
     var stateProps = ['searchTerm', 'showFilters', 'sortColumn', 'sortAscending'],
     settingStorage = params.settingStorage
@@ -144,7 +157,7 @@
 
       var criteria = computed(function() {
         var cols = grid.columns(),
-        criteria = {
+        crit = {
           searchTerm: ko.unwrap(grid.searchTerm),
           filters: cols.map(function(col) {
             return col.filterValue && col.filterValue()
@@ -153,13 +166,10 @@
           sortAscending: grid.sortAscending()
         }
 
-        if (!cols.reordered) {
+        if (!reordered) {
           skip(0)
-        } else {
-          Object.defineProperty(criteria, 'reordered', { value: true, configurable: true })
-          delete cols.reordered
         }
-        return criteria
+        return crit
       }, 1) // required to avoid recursion when updating items below
 
       grid.outstandingRequest = ko.observable()
@@ -167,8 +177,8 @@
         var crit = criteria()
         crit.skip = skip() // always take a dependency on these
 
-        if (crit.reordered) {
-          delete crit.reordered
+        if (reordered) {
+          reordered = false
           return outstandingRequest
         }
 
@@ -534,7 +544,6 @@
 
   function onDrag(el, cb) {
     el.addEventListener('mousedown', function(downEvent) {
-      downEvent.preventDefault()
       var opts = cb(downEvent)
 
       function onMouseUp(e) {
@@ -544,6 +553,7 @@
       }
 
       if (opts) {
+        downEvent.preventDefault()
         document.addEventListener('mousemove', opts.move)
         document.addEventListener('mouseup', onMouseUp)
       }
@@ -584,9 +594,10 @@
 
   ko.bindingHandlers.frypanReorder = {
     init: function(element, valueAccessor, allBindingsAccessor, _, bindingContext) {
-      if (ko.unwrap(valueAccessor())) {
+      var reorderFunc = ko.unwrap(valueAccessor())
+      if (reorderFunc) {
         onDrag(element, function(downEvent) {
-          if (downEvent.target.classList && downEvent.target.classList.contains('frypan-resizer')) {
+          if (!downEvent.target.classList || !downEvent.target.classList.contains('frypan-sort-toggle')) {
             return
           }
 
@@ -642,10 +653,7 @@
                     sourceIdx = items.indexOf(bindingContext.$data)
 
                   if (sourceIdx !== -1 && targetIdx !== -1) {
-                    Object.defineProperty(items, 'reordered', { value: true, configurable: true })
-                    items.splice(sourceIdx, 1)
-                    items.splice(targetIdx > sourceIdx ? targetIdx - 1 : targetIdx, 0, bindingContext.$data)
-                    observable.notifySubscribers()
+                    reorderFunc(sourceIdx, targetIdx)
                   }
                 }
               }
@@ -668,7 +676,7 @@
     template: '<div class="frypan-scroll-area">\
 <table>\
   <colgroup data-bind="foreach: $component.columns"><col data-bind="style: { width: $data.width() && $data.width() + \'px\' }"></col></colgroup>\
-  <thead data-bind="style: { width: $component.width() + \'px\' }"><tr data-bind="foreach: $component.columns"><th data-bind="css: $component.headerClassFor($data, $index()), animation: { when: $component.showFilters() === $index(), class: \'frypan-filter-open\', enter: \'frypan-filter-opening\', exit: \'frypan-filter-closing\' }, attr: { \'aria-sort\': $component.ariaSortForCol($data) }, style: { width: $data.width() && $data.width() + \'px\' }, frypanReorder: $component.reorderableColumns">\
+  <thead data-bind="style: { width: $component.width() + \'px\' }"><tr data-bind="foreach: $component.columns"><th data-bind="css: $component.headerClassFor($data, $index()), animation: { when: $component.showFilters() === $index(), class: \'frypan-filter-open\', enter: \'frypan-filter-opening\', exit: \'frypan-filter-closing\' }, attr: { \'aria-sort\': $component.ariaSortForCol($data) }, style: { width: $data.width() && $data.width() + \'px\' }, frypanReorder: $component.reorder">\
       <a href="" class="frypan-sort-toggle" data-bind="text: name, click: $component.toggleSort.bind($component)"></a>\
       <!-- ko if: $data.filterTemplateNodes -->\
         <a href="" class="frypan-filter-toggle" data-bind="frypanFilter:true"></a>\
