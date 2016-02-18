@@ -133,7 +133,7 @@ describe('virtualization', function() {
     thWidths.length.should.equal(3)
     cssWidths('colgroup col').should.deep.equal(thWidths)
 
-    fruits([{ moon: 'Europa', planet: 'Jupiter' }])
+    fruits([{ moon: '--Europa--', planet: '--Jupiter--' }])
 
     var immediateWidths = cssWidths('thead th')
     immediateWidths.length.should.equal(2)
