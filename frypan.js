@@ -432,10 +432,10 @@
           grid.columns().forEach(function(c) { c.width(null) })
         }
 
-        var thWidths = Array.prototype.map.call(thead.querySelectorAll('th'), function(th) {
+        var thWidths = Array.prototype.map.call(thead.firstElementChild.childNodes, function(th) {
           return th.offsetWidth
         }),
-        tdWidths = Array.prototype.map.call(tbody.querySelectorAll('tr:first-child td'), function(td) {
+        tdWidths = Array.prototype.map.call(tbody.firstElementChild.childNodes, function(td) {
           return td.offsetWidth
         }),
         columns = grid.columns()
