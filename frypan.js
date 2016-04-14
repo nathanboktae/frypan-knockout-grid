@@ -94,7 +94,7 @@
     }
 
     var stateProps = ['searchTerm', 'showFilters', 'sortColumn', 'sortAscending'],
-    settingStorage = params.settingStorage
+    settingStorage = ko.unwrap(params.settingStorage)
 
     if (typeof settingStorage === 'string') {
       settingStorage = function() {
@@ -435,7 +435,7 @@
         var thWidths = Array.prototype.map.call(thead.firstElementChild.childNodes, function(th) {
           return th.offsetWidth
         }),
-        tdWidths = Array.prototype.map.call(tbody.firstElementChild.childNodes, function(td) {
+        tdWidths = Array.prototype.map.call(tbody.firstElementChild ? tbody.firstElementChild.childNodes : [], function(td) {
           return td.offsetWidth
         }),
         columns = grid.columns()
