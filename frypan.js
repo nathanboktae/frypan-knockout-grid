@@ -165,12 +165,15 @@
           sortColumn: cols.indexOf(grid.sortColumn()) === -1 ? undefined : grid.sortColumn(),
           sortAscending: grid.sortAscending()
         }
+        if (typeof params.additionalCriteria === 'function') {
+          Object.assign(crit, params.additionalCriteria(grid))
+        }
 
         if (!reordered) {
           skip(0)
         }
         return crit
-      }, 1) // required to avoid recursion when updating items below
+      })
 
       grid.outstandingRequest = ko.observable()
       computed(function () {
@@ -182,35 +185,37 @@
           return outstandingRequest
         }
 
-        if (!outstandingRequest) {
-          outstandingRequest = ko.unwrap(params.data).call(grid, crit)
-          if (!outstandingRequest || typeof outstandingRequest.then !== 'function') {
-            throw new Error('A promise was not returned from the data function')
-          }
+        ko.dependencyDetection.ignore(function() {
+          if (!outstandingRequest) {
+            outstandingRequest = ko.unwrap(params.data).call(grid, crit)
+            if (!outstandingRequest || typeof outstandingRequest.then !== 'function') {
+              throw new Error('A promise was not returned from the data function')
+            }
 
-          grid.outstandingRequest(outstandingRequest)
-          function notify() {
-            outstandingRequest = null
-            grid.outstandingRequest(null)
-            if (criteriaChangedDuringRequest) {
-              criteriaChangedDuringRequest = false
-              criteria.notifySubscribers()
+            grid.outstandingRequest(outstandingRequest)
+            function notify() {
+              outstandingRequest = null
+              grid.outstandingRequest(null)
+              if (criteriaChangedDuringRequest) {
+                criteriaChangedDuringRequest = false
+                criteria.notifySubscribers()
+              }
             }
+            outstandingRequest.then(function(items) {
+              if (!Array.isArray(items)) {
+                throw new Error('async request did not result in an array of items but was ' + typeof items)
+              }
+              if (crit.skip) {
+                grid.sortedItems.splice.apply(grid.sortedItems, [crit.skip, 0].concat(items))
+              } else {
+                grid.sortedItems(items)
+              }
+              notify()
+            }, notify)
+          } else {
+            criteriaChangedDuringRequest = true
           }
-          outstandingRequest.then(function(items) {
-            if (!Array.isArray(items)) {
-              throw new Error('async request did not result in an array of items but was ' + typeof items)
-            }
-            if (crit.skip) {
-              grid.sortedItems.splice.apply(grid.sortedItems, [crit.skip, 0].concat(items))
-            } else {
-              grid.sortedItems(items)
-            }
-            notify()
-          }, notify)
-        } else {
-          criteriaChangedDuringRequest = true
-        }
+        })
         return outstandingRequest
       }, 1)
     } else {

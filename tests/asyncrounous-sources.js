@@ -1,6 +1,6 @@
 describe('asyncrounous sources', function() {
   var dataRequest, promise, resolve, reject
-  typicalAsyncTest = function() {
+  typicalAsyncTest = function(additionalCriteria) {
     promise = new Promise(function(res, rej) {
       resolve = res; reject = rej
     })
@@ -10,7 +10,7 @@ describe('asyncrounous sources', function() {
 
     testEl = document.createElement('div')
     testEl.innerHTML = '<aside class="search"><input type="text" data-bind="value: searchTerm, valueUpdate: \'input\'"></aside>\
-      <frypan params="columns: columns, data: data, loadingHtml: loadingHtml, searchTerm: searchTerm"></frypan>'
+      <frypan params="columns: columns, data: data, loadingHtml: loadingHtml, searchTerm: searchTerm, additionalCriteria: additionalCriteria"></frypan>'
     document.body.appendChild(testEl)
 
     ko.applyBindings({
@@ -19,7 +19,8 @@ describe('asyncrounous sources', function() {
         text: 'fruit'
       }],
       loadingHtml: '<p>loading...</p>',
-      data: dataRequest
+      data: dataRequest,
+      additionalCriteria: additionalCriteria
     }, testEl)
   }
   afterEach(function() {
@@ -306,6 +307,41 @@ describe('asyncrounous sources', function() {
     })
   })
 
+  it('should not take a dependency on anything in the dataRequest (use additionalCriteria or column templates instead)', function() {
+    clock.restore()
+    clock = null
+    testEl = document.createElement('div')
+    testEl.innerHTML = '<frypan params="data: data"><frypan-loader>Loading!</frypan-loader></frypan>'
+    document.body.appendChild(testEl)
+
+    var productIdToNames = ko.observable({ 2: 'headphones' })
+    dataRequest = sinon.spy(function() {
+      return Promise.resolve([{ product_id: 2 }].map(function(i) {
+        return { product: productIdToNames()[i.product_id] }
+      }))
+    })
+
+    ko.applyBindings({
+      data: dataRequest
+    }, testEl)
+
+    return pollUntilPassing(function() {
+      // unfortunately there is a double-call with async + autocolumns.
+      // a deep equals on the criteria observable would solve it.
+      dataRequest.should.have.been.calledTwice
+      textNodesFor('tbody tr td').should.deep.equal(['headphones'])
+    }).then(function() {
+      productIdToNames({ 2: 'Wireless Headphones' })
+    }).then(function() {
+      return new Promise(function(res) {
+        setTimeout(res, 40)
+      })
+    }).then(function() {
+      dataRequest.should.have.been.calledTwice
+      textNodesFor('tbody tr td').should.deep.equal(['headphones'])
+    })
+  })
+
   describe('infinite scroll', function() {
     var scrollArea
     before(function() {
@@ -453,6 +489,40 @@ describe('asyncrounous sources', function() {
         scrollArea.scrollTop = scrollArea.scrollHeight - scrollArea.offsetHeight * 1.2
       }).then(function() {
         return pollUntilPassing(function() {
+          dataRequest.should.have.been.calledTwice
+        })
+      })
+    })
+  })
+
+  describe('additional criteria', function() {
+    it('should include additional criteria returned from the additionalCriteria function', function() {
+      var additionalCriteria = sinon.spy(function(grid) {
+        grid.should.contain.keys(['columns', 'sortColumn', 'searchTerm'])
+        return { organic: true }
+      })
+      typicalAsyncTest(additionalCriteria)
+
+      additionalCriteria.should.have.been.calledOnce
+      dataRequest.should.have.been.calledOnce
+      dataRequest.lastCall.args[0].organic.should.be.true
+    })
+
+    it('should take a dependency on any observables in the function', function() {
+      clock.restore()
+      clock = null
+      var organic = ko.observable(false),
+      additionalCriteria = sinon.spy(function() {
+        return { organic: organic() }
+      })
+
+      typicalAsyncTest(additionalCriteria)
+      resolve(fruits)
+
+      return promise.then(function() {
+        organic(true)
+        return pollUntilPassing(function() {
+          additionalCriteria.should.have.been.calledTwice
           dataRequest.should.have.been.calledTwice
         })
       })
