@@ -478,7 +478,7 @@
       }
 
       function setup() {
-        rowHeight = td.offsetHeight
+        rowHeight = Math.max(td.offsetHeight, 2)
         if (frypanStyle.display !== 'flex') {
           scrollArea.style.height = '100%'
         }

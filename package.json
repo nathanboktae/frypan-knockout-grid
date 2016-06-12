@@ -1,6 +1,6 @@
 {
   "name": "frypan-knockout-grid",
-  "version": "0.7.0",
+  "version": "0.7.1",
   "description": "A light-weight yet powerful knockout component grid with a simple, functional composition style API",
   "main": "frypan.js",
   "devDependencies": {
@@ -18,6 +18,13 @@
   },
   "scripts": {
     "test": "node -e \"require('grunt').tasks(['test']);\""
+  },
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/nathanboktae/frypan-knockout-grid.git"
+  },
+  "bugs": {
+    "url": "http://github.com/nathanboktae/frypan-knockout-grid/issues"
   },
   "keywords": [
     "grid",
