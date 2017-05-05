@@ -1,6 +1,8 @@
 describe('saving settings', function() {
   var storageTest = function(settings) {
-    var searchTerm = ko.observable()
+    var searchTerm =           }
+          }
+mobx.observable()
     testSetup('columns: columns, data: data, settingStorage: settings, searchTerm: searchTerm', {
       columns: [{
         text: 'fruit'
@@ -8,7 +10,9 @@ describe('saving settings', function() {
         text: 'needsPeeling'
       }, {
         text: 'color',
-        filterValue: ko.observable('red'),
+        filterValue:           }
+          }
+mobx.observable('red'),
         filterTemplate: '<div class="teh-filter" data-bind="text: $data.filterValue"></div>',
         filter: function(color, item) { return item.color == color }
       }],

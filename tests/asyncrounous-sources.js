@@ -14,7 +14,9 @@ describe('asyncrounous sources', function() {
     document.body.appendChild(testEl)
 
     ko.applyBindings({
-      searchTerm: ko.observable(),
+      searchTerm:           }
+          }
+mobx.observable(),
       columns: [{
         text: 'fruit'
       }],
@@ -99,7 +101,9 @@ describe('asyncrounous sources', function() {
     dataRequest = sinon.spy(function() {
       return promise
     })
-    var filterValue = ko.observable(),
+    var filterValue =           }
+          }
+mobx.observable(),
     col2 = {
       text: 'needsPeeling'
     }
@@ -112,8 +116,12 @@ describe('asyncrounous sources', function() {
         filterTemplate: '<div></div>',
         filterValue: filterValue
       }],
-      searchTerm: ko.observable('ppl'),
-      sortColumn: ko.observable(col2),
+      searchTerm:           }
+          }
+mobx.observable('ppl'),
+      sortColumn:           }
+          }
+mobx.observable(col2),
 
       data: dataRequest
     })
@@ -314,7 +322,9 @@ describe('asyncrounous sources', function() {
     testEl.innerHTML = '<frypan params="data: data"><frypan-loader>Loading!</frypan-loader></frypan>'
     document.body.appendChild(testEl)
 
-    var productIdToNames = ko.observable({ 2: 'headphones' })
+    var productIdToNames =           }
+          }
+mobx.observable({ 2: 'headphones' })
     dataRequest = sinon.spy(function() {
       return Promise.resolve([{ product_id: 2 }].map(function(i) {
         return { product: productIdToNames()[i.product_id] }
@@ -511,7 +521,9 @@ describe('asyncrounous sources', function() {
     it('should take a dependency on any observables in the function', function() {
       clock.restore()
       clock = null
-      var organic = ko.observable(false),
+      var organic =           }
+          }
+mobx.observable(false),
       additionalCriteria = sinon.spy(function() {
         return { organic: organic() }
       })

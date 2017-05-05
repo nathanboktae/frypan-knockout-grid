@@ -1,14 +1,8 @@
 var testEl, fruits, clock,
-testSetup = function(params, viewModel) {
-  if (!viewModel) {
-    viewModel = params
-    params = null
-  }
-
-  testEl = document.createElement('frypan')
-  testEl.setAttribute('params', params || 'columns: columns, data: data')
+testSetup = function(params) {
+  testEl = document.createElement('div')
   document.body.appendChild(testEl)
-  ko.applyBindings(viewModel, testEl)
+  ReactDOM.render(React.createElement(Frypan, params), testEl)
 },
 textNodesFor = function(selector) {
   return Array.prototype.map.call(testEl.querySelectorAll(selector), function(el) {

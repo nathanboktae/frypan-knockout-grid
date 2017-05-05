@@ -8,7 +8,9 @@ describe('searching', function() {
       return true
     })
     ko.applyBindings({
-      searchTerm: ko.observable(),
+      searchTerm:           }
+          }
+mobx.observable(),
       data: fruits,
       columns: [{
         text: 'fruit',
