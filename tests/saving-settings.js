@@ -1,18 +1,14 @@
 describe('saving settings', function() {
   var storageTest = function(settings) {
-    var searchTerm =           }
-          }
-mobx.observable()
-    testSetup('columns: columns, data: data, settingStorage: settings, searchTerm: searchTerm', {
+    var searchTerm = mobx.observable()
+    testSetup({
       columns: [{
         text: 'fruit'
       }, {
         text: 'needsPeeling'
       }, {
         text: 'color',
-        filterValue:           }
-          }
-mobx.observable('red'),
+        filterValue: mobx.observable('red'),
         filterTemplate: '<div class="teh-filter" data-bind="text: $data.filterValue"></div>',
         filter: function(color, item) { return item.color == color }
       }],
@@ -25,7 +21,7 @@ mobx.observable('red'),
 
   it('should save settings in local storage if settingStorage is a string', function() {
     localStorage.setItem('fruits', 'peeeeple')
-    storageTest('fruits')('ppl')
+    storageTest('fruits').set('ppl')
     click('thead th:nth-of-type(2) a')
     click('thead a.frypan-filter-toggle')
 
@@ -82,10 +78,10 @@ mobx.observable('red'),
     textNodesFor('tbody td span em').should.deep.equal(['nan'])
   })
 
-  it('should save settings in local storage if settingStorage is a string', function() {
+  it('should save settings in local storage if settingStorage is a function', function() {
     var settings = sinon.spy()
 
-    storageTest(settings)('ppl')
+    storageTest(settings).set('ppl')
     click('thead th:nth-of-type(2) a')
     click('thead a.frypan-filter-toggle')
 

@@ -1,23 +1,31 @@
 describe('searching', function() {
-  var rowClick, searchTestSetup = function(searchFunc) {
+  var searchTestSetup = function(searchFunc, rowClick) {
+    var searchTerm = mobx.observable()
     testEl = document.createElement('div')
-    testEl.innerHTML = '<aside class="search"><input type="text" data-bind="value: searchTerm, valueUpdate: \'input\'"></aside><frypan params="columns: columns, data: data, searchTerm: searchTerm, rowClick: rowClick"></frypan>'
     document.body.appendChild(testEl)
 
-    rowClick = sinon.spy(function() {
-      return true
-    })
-    ko.applyBindings({
-      searchTerm:           }
-          }
-mobx.observable(),
-      data: fruits,
-      columns: [{
-        text: 'fruit',
-        search: searchFunc
-      }],
-      rowClick: rowClick
-    }, testEl)
+    render(
+      e('div', null,
+        e('aside', { className: 'search', key: 'searchaside' },
+          e('input', {
+            type: 'text',
+            onInput: function(e) {
+              searchTerm.set(e.target.value)
+            }
+          })
+        ),
+        e(Frypan, {
+          key: 'frypan',
+          searchTerm: searchTerm,
+          data: fruits,
+          columns: [{
+            text: 'fruit',
+            search: searchFunc
+          }],
+          rowClick: rowClick
+        })
+      )
+    , testEl)
   }
 
   it('should substring search the text field if no search function is provided', function() {
@@ -51,12 +59,14 @@ mobx.observable(),
   })
 
   it('should provide the correct item to rowClick when a row is clicked', function() {
-    searchTestSetup()
+    var rowClick = sinon.spy(function(item, e) {
+      item.should.equal(fruits[1])
+      e.defaultPrevented.should.be.true
+    })
+    searchTestSetup(null, rowClick)
     searchFor('ban')
     click('tbody tr:first-child td')
 
     rowClick.should.have.been.calledOnce
-    rowClick.lastCall.args[0].should.equal(fruits[1])
-    rowClick.lastCall.args[1].defaultPrevented.should.equal.true
   })
 })

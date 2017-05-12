@@ -1,8 +1,10 @@
 var testEl, fruits, clock,
+render = ReactDOM.render.bind(ReactDOM),
+e = React.createElement.bind(React),
 testSetup = function(params) {
   testEl = document.createElement('div')
   document.body.appendChild(testEl)
-  ReactDOM.render(React.createElement(Frypan, params), testEl)
+  render(e(Frypan, params), testEl)
 },
 textNodesFor = function(selector) {
   return Array.prototype.map.call(testEl.querySelectorAll(selector), function(el) {

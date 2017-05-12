@@ -71,4 +71,6 @@ describe('sorting', function() {
     click(ageCol)
     attributesFor('thead th', 'aria-sort').should.deep.equal([undefined, 'descending'])
   })
+
+  it('should allow providing a custom row key')
 })

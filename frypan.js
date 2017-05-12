@@ -12,29 +12,29 @@
   }
 
   function init(grid, params) {
-    var async = params.data === 'function',
-      computeds = [],
+    var asyncronous = typeof params.data === 'function',
+      disposables = [],
       computed = function(func, throttle) {
-        var c = throttle ? mobx.computed(func/* TODO , ?, throttle*/) : mobx.computed(func)
-        computeds.push(c)
-        return c
-      }
+        var d = throttle ? mobx.autorunAsync(func, throttle) : mobx.computed(func)
+        disposables.push(d)
+        return d
+      },
+      sortedItems
 
-    Object.defineProperty(grid, 'computeds', {
-      value: computeds
+    Object.defineProperty(grid, 'disposables', {
+      value: disposables
     })
 
     mobx.extendObservable(grid, {
       offset: 0,
       visibleRowCount: 500,
       minColWidth: params.minColWidth || 40,
+      outstandingRequest: mobx.observable.ref()
     })
 
-    grid.sortedItems = mobx.observable([]) // sync sources replace this with a computed
-
-    // read-write required params with optionally supplied observable
-    ;['sortColumn', 'sortAscending'].forEach(function(p) {
-      var obv = mobx.isObservable(params[p]) ? params[p] : mobx.observable()
+    // read-write required params with optionally supplied *shallow* observable
+    ;['sortColumn', 'sortAscending', 'showFilters'].forEach(function(p) {
+      var obv = mobx.isBoxedObservable(params[p]) ? params[p] : mobx.observable.shallowBox(params[p])
       Object.defineProperty(grid, p, {
         enumerable: true,
         get: function() {
@@ -57,30 +57,36 @@
       }
     })
     // optional non-observable params
-    ;['loadingHtml', 'filterToggleTemplate', 'rowClick', 'resizableColumns'].forEach(function(p) {
+    ;['loadingComponent', 'filterToggleComponent', 'rowClick', 'resizableColumns'].forEach(function(p) {
       if (p in params) grid[p] = params[p]
     })
 
+    if (asyncronous) {
+      sortedItems = mobx.observable([])
+    }
+
     if (!params.columns) {
       var sampleItemKeys = computed(function() {
-        var sampleItem = async ? grid.sortedItems.get()[0] : params.data[0]
+        var sampleItem = asyncronous ? sortedItems.length && sortedItems[0] : params.data.length && params.data[0]
         // TODO stil true for mobx? returning a joined string here as observables don't do deep equals
         return sampleItem ? Object.keys(sampleItem).join('🙈') : ''
       })
     }
 
     var columns = computed(function() {
-      var cols = params.columns || sampleItemKeys.get().split('🙈').map(function(k) { return { text: k, name: k } })
+      var cols = params.columns || sampleItemKeys.get().split('🙈').map(k => ({ text: k, name: k }))
       return cols.map(function(col, idx) {
-        if (col.filterTemplate) {
-          if (typeof col.filter !== 'function' && !async) {
+        if (col.filterComponent) {
+          if (typeof col.filter !== 'function' && !asyncronous) {
             throw new Error('A filter function is required when filtering synchronous sources')
           }
-          if (!mobx.isObservable(col.filterValue)) {
-            col.filterValue = mobx.observable()
+          if (!('filterValue' in col)) {
+            mobx.extendObservable(col, {
+              filterValue: mobx.observable.shallow()
+            })
           }
-          // TODO: filterTemplate
         }
+
         if (typeof col.sort !== 'function') {
           col.sort = function(a, b) {
             var aText = textFor(grid, col, a),
@@ -91,9 +97,15 @@
           }
         }
 
-        mobx.extendObservable(col, {
-          width: col.width
-        })
+        if (!col.name) {
+          col.name = 'anoncol' + idx
+        }
+
+        if (!('width' in col)) {
+          mobx.extendObservable(col, {
+            width: col.width
+          })
+        }
 
         // TODO: template
         return col
@@ -139,20 +151,20 @@
       var settings = settingStorage(), firstCall = true
       if (settings && typeof settings === 'object') {
         stateProps.forEach(function(prop) {
-          grid[prop](prop === 'sortColumn' ? grid.columns[settings[prop]] : settings[prop])
+          grid[prop] = prop === 'sortColumn' ? grid.columns[settings[prop]] : settings[prop]
         })
         if (Array.isArray(settings.filters)) {
           grid.columns.forEach(function(col, colIdx) {
-            col.filterValue && col.filterValue(settings.filters[colIdx])
+            if ('filterValue' in col) {
+              col.filterValue = settings.filters[colIdx]
+            }
           })
         }
       }
 
       computed(function() {
         var gridState = {
-          filters: grid.columns.map(function(col) {
-            return col.filterValue && col.filterValue()
-          })
+          filters: grid.columns.map(col => col.filterValue)
         }
         stateProps.forEach(function(prop) {
           gridState[prop] = prop === 'sortColumn' ? grid.columns.indexOf(grid[prop]()) : grid[prop]()
@@ -166,7 +178,7 @@
       })
     }
 
-    if (async) {
+    if (asyncronous) {
       var
         outstandingRequest,
         criteriaChangedDuringRequest = false,
@@ -175,7 +187,7 @@
       // infinite scrolling
       computed(function() {
         var
-          itemCount = /* TODO ko.utils.peekObservable */grid.sortedItems.get().length,
+          itemCount = /* TODO ko.utils.peekObservable */sortedItems.length,
           rowCount = grid.visibleRowCount
         if (itemCount > rowCount && itemCount - grid.offset < rowCount * 2) {
           skip.set(itemCount)
@@ -186,24 +198,24 @@
         var cols = grid.columns,
         crit = {
           searchTerm: grid.searchTerm,
-          filters: cols.map(function(col) {
-            return col.filterValue && col.filterValue.get()
-          }),
-          sortColumn: cols.indexOf(grid.sortColumn()) === -1 ? undefined : grid.sortColumn,
+          filters: cols.map(col => col.filterValue),
+          sortColumn: cols.indexOf(grid.sortColumn) === -1 ? undefined : grid.sortColumn,
           sortAscending: grid.sortAscending
         }
         if (typeof params.additionalCriteria === 'function') {
           Object.assign(crit, params.additionalCriteria(grid))
         }
 
-        if (!reordered) {
-          skip.set(0)
-        }
         return crit
       })
 
-      grid.outstandingRequest = mobx.observable()
-      computed(function () {
+      computed(function() {
+        if (!reordered) {
+          skip.set(0)
+        }
+      })
+
+      computed(function fetchData() {
         var crit = criteria.get()
         crit.skip = skip.get() // always take a dependency on these
 
@@ -212,37 +224,36 @@
           return outstandingRequest
         }
 
-        // TODO: ko.dependencyDetection.ignore(function() {
+        mobx.untracked(function() {
           if (!outstandingRequest) {
             outstandingRequest = unwrap(params.data).call(grid, crit)
             if (!outstandingRequest || typeof outstandingRequest.then !== 'function') {
               throw new Error('A promise was not returned from the data function')
             }
 
-            grid.outstandingRequest(outstandingRequest)
+            grid.outstandingRequest = outstandingRequest
             function notify() {
-              outstandingRequest = null
-              grid.outstandingRequest(null)
+              grid.outstandingRequest = outstandingRequest = null
               if (criteriaChangedDuringRequest) {
                 criteriaChangedDuringRequest = false
-                criteria.notifySubscribers()
+                fetchData()
               }
             }
             outstandingRequest.then(function(items) {
               if (!Array.isArray(items)) {
-                throw new Error('async request did not result in an array of items but was ' + typeof items)
+                throw new Error('asyncronous request did not result in an array of items but was ' + typeof items)
               }
               if (crit.skip) {
-                grid.sortedItems.splice.apply(grid.sortedItems, [crit.skip, 0].concat(items))
+                sortedItems.splice.apply(sortedItems, [crit.skip, 0].concat(items))
               } else {
-                grid.sortedItems.set(items)
+                sortedItems.replace(items)
               }
               notify()
             }, notify)
           } else {
             criteriaChangedDuringRequest = true
           }
-        // })
+        })
         return outstandingRequest
       }, 1)
     } else {
@@ -252,12 +263,12 @@
             searchTerm = grid.searchTerm
 
         columns.forEach(function(col) {
-          if (col.filterValue && col.filterValue()) {
-            items = items.filter(col.filter.bind(col, col.filterValue()))
+          if (col.filterValue !== undefined) {
+            items = items.filter(col.filter.bind(col, col.filterValue))
           }
         })
 
-        if (searchTerm) {
+        if (searchTerm && typeof searchTerm === 'string') {
           var lcSearchTerm = searchTerm.toLowerCase()
           items = items.filter(function(item) {
             for (var i = 0; i < columns.length; i++) {
@@ -272,9 +283,9 @@
           })
         }
         return items
-      }, 50)
+      }/* TODO: throttle - maybe?, 50*/)
 
-      grid.sortedItems = computed(function() {
+      sortedItems = computed(function() {
         var sortCol = grid.sortColumn,
             items = filteredItems.get()
 
@@ -289,12 +300,10 @@
 
         return items
       })
-
-      grid.outstandingRequest = function() {}
     }
 
     grid.items = computed(function() {
-      var items = grid.sortedItems.get()
+      var items = mobx.isObservableArray(sortedItems) ? sortedItems : sortedItems.get()
 
       if (items.length >= grid.visibleRowCount) {
         items = items.slice(grid.offset, grid.offset + grid.visibleRowCount)
@@ -329,8 +338,8 @@
 
       return e('td', { className: getVal('class', this.props) },
         this.props.col.link ?
-        e('span', { key }, text) :
-        e('a', { href: getVal('link', this.props), key }, text)
+        e('a', { href: getVal('link', this.props), key }, text) :
+        e('span', { key }, text)
       )
     }
   }),
@@ -344,21 +353,29 @@
       if ((grid.offset + idx) % 2 === 1) {
         className += ' frypan-odd'
       }
+      if (typeof grid.rowClick === 'function') {
+        var onClick = function(e) {
+          e.preventDefault()
+          grid.rowClick(item, e)
+        }
+      }
 
-      return e('tr', { className }, grid.columns.map(col => e(FrypanText, { grid, col, item, idx, key: 'td' + col.name })))
+      return e('tr', { className, onClick }, grid.columns.map(col => e(FrypanText, { grid, col, item, idx, key: 'td' + col.name })))
     }
   }),
 
   FrypanTbody = component({
     render: function() {
       var grid = this.props.grid
-      return e('tbody', null, grid.items.get().map((item, idx) => e(FrypanRow, { grid, item, idx, key: 'tr' + idx })))
+      return e('tbody', null, grid.items.get().map(
+        (item, idx) => e(FrypanRow, { grid, item, idx, key: 'tr' + (grid.rowKey ? item[grid.rowKey] : idx) }))
+      )
     }
   }),
 
   FrypanTh = component({
     render: function() {
-      var { col, grid } = this.props,
+      var { col, grid, idx } = this.props,
       children = [
         e('a', {
           key: 'frypan-sort-toggle',
@@ -374,14 +391,29 @@
           }
         }, col.name)
       ]
-      // TODO: filterTemplateNodes
+      if (col.filterComponent) {
+        children.push(e('a', {
+          className: 'frypan-filter-toggle',
+          key: 'frypan-filter-toggle',
+          onClick: function(e) {
+            e.preventDefault()
+            grid.showFilters = grid.showFilters === idx ? undefined : idx
+          }
+        }, grid.filterToggleComponent && e(grid.filterToggleComponent, { col, grid, key: 'filter-toggle-comp' })))
+
+        children.push(e(col.filterComponent, { col, grid, key: 'filtercomp', className: 'frypan-filters' }))
+      }
+
       if (grid.resizableColumns) {
         // TODO: <a class="frypan-resizer" data-bind="frypanResizer: $data.width"></a>
       }
 
       return e('th', {
-        className: (getVal.call(this, 'class', col) || '') +
-      (col.filterValue && col.filterValue.get() ? ' frypan-filtered' : ''),
+        className: [
+          getVal('class', this.props),
+          col.filterValue !== undefined && 'frypan-filtered',
+          grid.showFilters === idx && 'frypan-filter-open'
+        ].filter(x => x).join(' '),
         'aria-sort': this.sortColumn === col && (this.sortAscending ? 'ascending' : 'descending'),
         style: {
           width: col.width && (col.width + 'px')
@@ -396,26 +428,29 @@
     },
 
     componentWillUnmount: function() {
-      this.computeds.forEach(function(c) { c.dispose() })
+      this.disposables.forEach(function(d) { d.dispose() })
     },
 
     render: function() {
       var grid = this
-      return e('div', { className: 'frypan-scroll-area', key: 'scroll-area' }, [
-        e('table', { key: 'the-table', }, [
-          e('colgroup', { key: 'the-colgroup' },
-            grid.columns.map(function(c) {
-              return e('col', { style: { width: c.width ? c.width + 'px' : undefined }, key: 'col-' + c.name })
-            })
-          ),
-          e('thead', { width: grid.columns.reduce((w, c) => w + c.width, 0) + 'px', key: 'the-head' }, [
-            e('tr', { key: 'tr' }, grid.columns.map((col, i) => e(FrypanTh, { col, grid, key: String(i) })))
-          ]),
-          e('tbody', { className: 'frypan-top-spacer', style: { display: 'none' }, key: 'top-spacer' }),
-          e(FrypanTbody, { grid, key: 'frypan-body' }),
-          e('tbody', { className: 'frypan-bottom-spacer', style: { display: 'none' }, key: 'bottom-spacer' }),
-        ])
-      ])
+      return e('frypan', null,
+        e('div', { className: 'frypan-scroll-area', key: 'scroll-area' }, [
+          e('table', { key: 'the-table', }, [
+            e('colgroup', { key: 'the-colgroup' },
+              grid.columns.map(function(c) {
+                return e('col', { style: { width: c.width ? c.width + 'px' : undefined }, key: 'col-' + c.name })
+              })
+            ),
+            e('thead', { width: grid.columns.reduce((w, c) => w + c.width, 0) + 'px', key: 'the-head' }, [
+              e('tr', { key: 'tr' }, grid.columns.map((col, idx) => e(FrypanTh, { col, grid, idx, key: 'th' + String(idx) })))
+            ]),
+            e('tbody', { className: 'frypan-top-spacer', style: { display: 'none' }, key: 'top-spacer' }),
+            e(FrypanTbody, { grid, key: 'frypan-body' }),
+            e('tbody', { className: 'frypan-bottom-spacer', style: { display: 'none' }, key: 'bottom-spacer' }),
+          ])
+        ]),
+        e('div', { className: 'frypan-loader ' + (grid.outstandingRequest ? 'frypan-loading' : ''), key: 'frypan-loading' }, grid.loadingComponent)
+      )
     }
   })
 

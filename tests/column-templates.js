@@ -140,7 +140,7 @@ describe('column templates', function() {
         data: fruits
       })
 
-      testEl.querySelector('tbody td > span').className.should.equal('fruits')
+      testEl.querySelector('tbody td').className.should.equal('fruits')
     })
 
     it('should add the class(es) for header columns, where item and rowIdx are not available', function() {
@@ -170,7 +170,7 @@ describe('column templates', function() {
         data: fruits
       })
 
-      testEl.querySelector('tbody tr:first-child span').className.should.equal('0-apple-optional')
+      testEl.querySelector('tbody tr:first-child td').className.should.equal('0-apple-optional')
     })
   })
 
@@ -185,7 +185,7 @@ describe('column templates', function() {
       })
 
       attributesFor('tbody td > a', 'href').should.deep.equal(['/details', '/details'])
-      textNodesFor('tbody td > a > span').should.deep.equal(['apple', 'banana'])
+      textNodesFor('tbody td > a').should.deep.equal(['apple', 'banana'])
     })
 
     it('should render the result of a function called with item and row index', function() {
@@ -204,26 +204,11 @@ describe('column templates', function() {
         '/details/banana?idx=1'
       ])
     })
-
-    it('should render class attributes on the anchor', function() {
-      testSetup({
-        columns: [{
-          link: function(item, rowIdx) {
-            return '/details/' + item.fruit + '?idx=' + rowIdx
-          },
-          text: 'fruit',
-          class: 'fruits'
-        }],
-        data: fruits
-      })
-
-      attributesFor('tbody td > a', 'class').should.deep.equal(['fruits', 'fruits'])
-    })
   })
 
   describe('rowClass', function() {
     it('should add a class on a row returned from the function', function() {
-      testSetup('data: data, rowClass: rowClass', {
+      testSetup({
         rowClass: function(item) {
           return 'fruit-' + item.fruit
         },

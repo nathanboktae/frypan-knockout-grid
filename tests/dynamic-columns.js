@@ -1,6 +1,6 @@
 describe('dynamic columns', function() {
   it('should be able to change the number of columns', function() {
-    var columns = ko.observableArray([{
+    var columns = mobx.observable([{
       text: 'fruit'
     }])
 
@@ -15,7 +15,7 @@ describe('dynamic columns', function() {
   })
 
   it('should be able to add functionality to existing columns', function() {
-    var columns = ko.observableArray([{
+    var columns = mobx.observable([{
       text: 'fruit'
     }, {
       text: 'color'
@@ -57,8 +57,8 @@ describe('dynamic columns', function() {
 
   describe('implicit', function() {
     it('should default to creating text columns for properties on a data item as it changes', function() {
-      var data = ko.observableArray()
-      testSetup('data: data', {
+      var data = mobx.observable([])
+      testSetup({
         data: data
       })
       textNodesFor('tbody td').should.deep.equal([])
@@ -69,12 +69,12 @@ describe('dynamic columns', function() {
     })
 
     it('should work with observables behind properties', function() {
-      var viewModel = {}, data = ko.observableArray()
+      var viewModel = {}, data = mobx.observable([])
       Object.defineProperty(viewModel, 'data', {
         get: data,
         enumerable: true
       })
-      testSetup('data: data', viewModel)
+      testSetup(viewModel)
       textNodesFor('tbody td').should.deep.equal([])
 
       data.push({ id: 1, fruit: 'strawberry' })
