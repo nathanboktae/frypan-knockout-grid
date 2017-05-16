@@ -1,4 +1,4 @@
-describe('column templates', function() {
+describe('column rendering', function() {
   describe('text', function() {
     it('should render the property of the row item if a string', function() {
       testSetup({
