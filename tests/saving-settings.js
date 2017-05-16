@@ -8,12 +8,14 @@ describe('saving settings', function() {
         text: 'needsPeeling'
       }, {
         text: 'color',
-        filterValue: mobx.observable('red'),
-        filterTemplate: '<div class="teh-filter" data-bind="text: $data.filterValue"></div>',
+        filterValue: 'red',
+        filterComponent: function(props) {
+          return e('div', { className:'teh-filter' }, props.col.filterValue)
+        },
         filter: function(color, item) { return item.color == color }
       }],
       searchTerm: searchTerm,
-      settings: settings,
+      settingsStorage: settings,
       data: fruits
     })
     return searchTerm

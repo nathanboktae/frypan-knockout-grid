@@ -1,4 +1,4 @@
-describe('virtualization', function() {
+xdescribe('virtualization', function() {
   before(function() {
     document.styleSheets[0].insertRule('frypan { display: block; width: 300px; height: 200px; overflow: auto }', 1);
   })

@@ -66,6 +66,7 @@ describe('sorting', function() {
 
     var ageCol = testEl.querySelector('thead th:nth-of-type(2) a.frypan-sort-toggle')
     click(ageCol)
+    clock.tick(10)
     attributesFor('thead th', 'aria-sort').should.deep.equal([undefined, 'ascending'])
 
     click(ageCol)

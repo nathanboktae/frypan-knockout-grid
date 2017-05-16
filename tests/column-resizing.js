@@ -1,4 +1,4 @@
-describe('column resizing', function() {
+xdescribe('column resizing', function() {
   [false, true].forEach(function(virtualize) {
     describe(virtualize ? 'with virtualization' : 'without virtualization', function() {
       if (virtualize) {

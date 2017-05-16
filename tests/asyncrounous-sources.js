@@ -38,7 +38,7 @@ describe('asyncrounous sources', function() {
     clock && clock.tick(10)
   }
   afterEach(function() {
-    delete Frypan.prototype.loadingHtml
+    delete Frypan.prototype.loadingComponent
   })
 
   Promise.delay = function(delay) {
@@ -60,26 +60,12 @@ describe('asyncrounous sources', function() {
     })
   })
 
-  it('should show allow custom loading html via params', function() {
+  it('should show allow custom loading component via params', function() {
     typicalAsyncTest()
 
     textNodesFor('tbody tr td').should.be.empty
     testEl.querySelector('div.frypan-loader').should.have.class('frypan-loading')
     testEl.querySelector('.frypan-loader p').textContent.should.equal('loading...')
-  })
-
-  xit('should show allow custom loading html via a frypan-loader child element', function() {
-    testEl = document.createElement('div')
-    testEl.innerHTML = '<frypan params="data: data"><frypan-loader>Loading!</frypan-loader></frypan>'
-    document.body.appendChild(testEl)
-
-    ko.applyBindings({
-      loadingHtml: '<p>loading...</p>',
-      data: function() { return new Promise(function() { }) }
-    }, testEl)
-
-    testEl.querySelector('div.frypan-loader').should.have.class('frypan-loading')
-    testEl.querySelector('.frypan-loader').textContent.should.equal('Loading!')
   })
 
   it('should allow extending the prototype to use a default loading html', function() {

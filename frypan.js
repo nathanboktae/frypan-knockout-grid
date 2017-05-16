@@ -11,11 +11,25 @@
     return mobx.isObservable(v) ? v.get() : v
   }
 
+  function observableProperty(obj, p, obv) {
+    Object.defineProperty(obj, p, {
+      enumerable: true,
+      get: function() {
+        return obv.get()
+      },
+      set: function(v) {
+       obv.set(v)
+      }
+    })
+  }
+
   function init(grid, params) {
     var asyncronous = typeof params.data === 'function',
       disposables = [],
       computed = function(func, throttle) {
-        var d = throttle ? mobx.autorunAsync(func, throttle) : mobx.computed(func)
+        var d = typeof throttle === 'number' ?
+          mobx.autorunAsync(func, throttle) :
+          (throttle ? mobx.autorun(func) : mobx.computed(func))
         disposables.push(d)
         return d
       },
@@ -32,37 +46,21 @@
       outstandingRequest: mobx.observable.ref()
     })
 
-    // read-write required params with optionally supplied *shallow* observable
-    ;['sortColumn', 'sortAscending', 'showFilters'].forEach(function(p) {
+    // read-write required params with optionally supplied *shallow box* observable
+    ;['searchTerm', 'sortColumn', 'sortAscending', 'showFilters'].forEach(function(p) {
       var obv = mobx.isBoxedObservable(params[p]) ? params[p] : mobx.observable.shallowBox(params[p])
-      Object.defineProperty(grid, p, {
-        enumerable: true,
-        get: function() {
-          return obv.get()
-        },
-        set: function(v) {
-         obv.set(v)
-        }
-      })
-    })
-    // read-only possibly observable optional params
-    ;['searchTerm', 'rowClass'].forEach(function(p) {
-      if (p in params) {
-        Object.defineProperty(grid, p, {
-          enumerable: true,
-          get: function() {
-            return unwrap(params[p])
-          }
-        })
-      }
+      observableProperty(grid, p, obv)
     })
     // optional non-observable params
-    ;['loadingComponent', 'filterToggleComponent', 'rowClick', 'resizableColumns'].forEach(function(p) {
+    ;['loadingComponent', 'filterToggleComponent', 'rowClick', 'rowClass', 'resizableColumns'].forEach(function(p) {
       if (p in params) grid[p] = params[p]
     })
 
     if (asyncronous) {
       sortedItems = mobx.observable([])
+    }
+    if (grid.sortAscending == null) {
+      grid.sortAscending = true
     }
 
     if (!params.columns) {
@@ -80,10 +78,9 @@
           if (typeof col.filter !== 'function' && !asyncronous) {
             throw new Error('A filter function is required when filtering synchronous sources')
           }
-          if (!('filterValue' in col)) {
-            mobx.extendObservable(col, {
-              filterValue: mobx.observable.shallow()
-            })
+          var pd = Object.getOwnPropertyDescriptor(col, 'filterValue')
+          if (!pd || typeof pd.get !== 'function') {
+            observableProperty(col, 'filterValue', mobx.observable.shallowBox(col.filterValue))
           }
         }
 
@@ -107,7 +104,6 @@
           })
         }
 
-        // TODO: template
         return col
       })
     })
@@ -133,21 +129,22 @@
     }
 
     var stateProps = ['searchTerm', 'showFilters', 'sortColumn', 'sortAscending'],
-    settingStorage = params.settingStorage
+    settingStorage = params.settingStorage || params.settingsStorage
 
     if (typeof settingStorage === 'string') {
+      var lsKey = settingStorage
       settingStorage = function() {
         if (arguments.length) {
-          localStorage.setItem(params.settingStorage, JSON.stringify(arguments[0]))
+          localStorage.setItem(lsKey, JSON.stringify(arguments[0]))
         } else {
           try {
-            return JSON.parse(localStorage.getItem(params.settingStorage))
+            return JSON.parse(localStorage.getItem(lsKey))
           } catch (e) {}
         }
       }
     }
 
-    if (settingStorage) {
+    if (typeof settingStorage === 'function') {
       var settings = settingStorage(), firstCall = true
       if (settings && typeof settings === 'object') {
         stateProps.forEach(function(prop) {
@@ -167,7 +164,7 @@
           filters: grid.columns.map(col => col.filterValue)
         }
         stateProps.forEach(function(prop) {
-          gridState[prop] = prop === 'sortColumn' ? grid.columns.indexOf(grid[prop]()) : grid[prop]()
+          gridState[prop] = prop === 'sortColumn' ? grid.columns.indexOf(grid[prop]) : grid[prop]
         })
 
         if (firstCall) {
@@ -175,7 +172,7 @@
           return
         }
         settingStorage(gridState)
-      })
+      }, true)
     }
 
     if (asyncronous) {
@@ -210,10 +207,11 @@
       })
 
       computed(function() {
+        criteria.get()
         if (!reordered) {
           skip.set(0)
         }
-      })
+      }, true)
 
       computed(function fetchData() {
         var crit = criteria.get()
@@ -334,13 +332,21 @@
   FrypanText = component({
     render: function() {
       // TODO: search <em> highlighting
-      var text = textFor(this.props.grid, this.props.col, this.props.item, this.props.idx)
+      var text = textFor(this.props.grid, this.props.col, this.props.item, this.props.idx),
+          term = this.props.grid.searchTerm
+      if (typeof term === 'string' && term) {
+        text = text.split(term).reduce((arr, t, idx) => {
+          if (idx > 0) {
+            arr.push(e('em', { key: 'match' + idx }, term))
+          }
+          arr.push(t)
+          return arr
+        }, [])
+      }
 
-      return e('td', { className: getVal('class', this.props) },
-        this.props.col.link ?
-        e('a', { href: getVal('link', this.props), key }, text) :
-        e('span', { key }, text)
-      )
+      return this.props.col.link ?
+        e('a', { href: getVal('link', this.props) }, text) :
+        e('span', null, text)
     }
   }),
 
@@ -360,7 +366,10 @@
         }
       }
 
-      return e('tr', { className, onClick }, grid.columns.map(col => e(FrypanText, { grid, col, item, idx, key: 'td' + col.name })))
+      return e('tr', { className, onClick }, grid.columns.map(col => e('td',
+        { className: getVal('class', { grid, col, item, idx }), key: 'td' + col.name },
+        e(col.component || FrypanText, { grid, col, item, idx, key: 'tdc' + col.name })))
+      )
     }
   }),
 
@@ -410,11 +419,11 @@
 
       return e('th', {
         className: [
-          getVal('class', this.props),
+          getVal('class', { col, grid }),
           col.filterValue !== undefined && 'frypan-filtered',
           grid.showFilters === idx && 'frypan-filter-open'
         ].filter(x => x).join(' '),
-        'aria-sort': this.sortColumn === col && (this.sortAscending ? 'ascending' : 'descending'),
+        'aria-sort': grid.sortColumn === col ? (grid.sortAscending ? 'ascending' : 'descending') : undefined,
         style: {
           width: col.width && (col.width + 'px')
         }
