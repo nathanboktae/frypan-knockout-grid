@@ -2,7 +2,9 @@
   if (typeof define === 'function' && define.amd) {
     define(['knockout', 'knockout-css3-animation'], factory)
   } else if (typeof exports === 'object' && typeof module === 'object') {
-    module.exports = factory(require('knockout'), require('knockout-css3-animation'))
+    var cjsReact = require('react'),
+        cjsMobxReact = require('mobx-react')
+    module.exports = factory(require('mobx'), x => cjsMobxReact.observer(cjsReact.createClass(x)), cjsReact.createElement)
   } else {
     window.Frypan = factory(mobx, x => mobxReact.observer(React.createClass(x)), React.createElement)
   }

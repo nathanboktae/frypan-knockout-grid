@@ -18,25 +18,21 @@ module.exports = function(grunt) {
           browsers: [{
             browserName:"iphone",
             platform: "OS X 10.10",
-            version: "7.1"
+            version: "10.2"
           }, {
             browserName:"iphone",
             platform: "OS X 10.10",
-            version: "8.2"
+            version: "9.3"
           }, {
             browserName:"safari",
-            version: "9"
-          }, {
-            browserName:"safari",
-            platform: "OS X 10.10",
-            version: "8"
+            version: "10"
           }, {
             browserName:"android",
             platform: "Linux",
             version: "5.1"
           }, {
             browserName: 'googlechrome',
-            platform: 'linux'
+            version: 'latest'
           }, {
             browserName: 'firefox',
             platform: 'WIN7',

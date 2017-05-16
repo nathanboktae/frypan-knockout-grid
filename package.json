@@ -1,7 +1,7 @@
 {
-  "name": "frypan-knockout-grid",
-  "version": "0.7.1",
-  "description": "A light-weight yet powerful knockout component grid with a simple, functional composition style API",
+  "name": "frypan-react-mobx-grid",
+  "version": "0.0.1",
+  "description": "A light-weight yet powerful observable component grid with a simple, functional composition style API, in a mobx and React flavor.",
   "main": "frypan.js",
   "devDependencies": {
     "babel-core": "^5.8.22",
@@ -11,8 +11,8 @@
     "grunt-connect": "^0.2.0",
     "grunt-contrib-connect": "^0.11.2",
     "grunt-saucelabs": "^8.6.1",
-    "knockout": "^3.3.0",
     "mocha": "^2.2.5",
+    "react-dom": "^15.5.4",
     "sinon-browser-only": "^1.12.1",
     "sinon-chai": "^2.8.0"
   },
@@ -28,14 +28,19 @@
   },
   "keywords": [
     "grid",
-    "data-table",
+    "datatable",
+    "datagrid",
     "table",
-    "knockout",
+    "react",
+    "mobx",
+    "observable",
     "frypan"
   ],
   "author": "Nathan Black <nathan@nathanblack.org>",
   "license": "ISC",
   "dependencies": {
-    "knockout-css3-animation": ">= 0.1.1"
+    "mobx": "^3.0.0",
+    "mobx-react": "^4.0.0",
+    "react": "^13.0.0"
   }
 }
