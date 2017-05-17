@@ -116,7 +116,7 @@ describe('asyncrounous sources', function() {
       filterComponent: function(props) { return e('div', props) },
       filterValue: undefined
     }),
-    col2 = { text: 'needsPeeling' }
+    col2 = { text: 'needsPeeling', defaultSort: true }
 
     testSetup({
       columns: [{
@@ -124,7 +124,6 @@ describe('asyncrounous sources', function() {
       }, col2, col3],
       searchTerm: mobx.observable('ppl'),
       sortAscending: true,
-      sortColumn: col2,
       data: dataRequest
     })
     clock.tick(10)

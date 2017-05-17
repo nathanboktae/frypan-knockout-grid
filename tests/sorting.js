@@ -34,7 +34,25 @@ describe('sorting', function() {
       data: fruits
     })
 
+    textNodesFor('tbody td:first-child span').should.deep.equal(['grapefruit', 'apple', 'banana'])
     click('thead th:nth-of-type(2) a.frypan-sort-toggle')
+    textNodesFor('tbody td:first-child span').should.deep.equal(['banana', 'apple', 'grapefruit'])
+  })
+
+  it('should sort on a column marked as the default sort column', function() {
+    testSetup({
+      columns: [{
+        text: 'fruit'
+      }, {
+        text: 'color',
+        defaultSort: true,
+        sort: function(a, b) {
+          return a.color < b.color ? 1 : -1
+        }
+      }],
+      data: fruits
+    })
+
     textNodesFor('tbody td:first-child span').should.deep.equal(['banana', 'apple', 'grapefruit'])
   })
 

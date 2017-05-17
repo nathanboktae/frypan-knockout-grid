@@ -1,6 +1,8 @@
 (function(factory) {
   if (typeof define === 'function' && define.amd) {
-    define(['knockout', 'knockout-css3-animation'], factory)
+    define(['mobx', 'mobx-react', 'react'], function(mobx, mobxReact, React) {
+      return factory(mobx, x => mobxReact.observer(React.createClass(x)), React.createElement)
+    })
   } else if (typeof exports === 'object' && typeof module === 'object') {
     var cjsReact = require('react'),
         cjsMobxReact = require('mobx-react')
@@ -10,7 +12,7 @@
   }
 })(function(mobx, component, e) {
   function unwrap(v) {
-    return mobx.isObservable(v) ? v.get() : v
+    return mobx.isObservable(v) && !mobx.isObservableArray(v) ? v.get() : v
   }
 
   function observableProperty(obj, p, obv) {
@@ -29,9 +31,8 @@
     var asyncronous = typeof params.data === 'function',
       disposables = [],
       computed = function(func, throttle) {
-        var d = typeof throttle === 'number' ?
-          mobx.autorunAsync(func, throttle) :
-          (throttle ? mobx.autorun(func) : mobx.computed(func))
+        if (!throttle) return mobx.computed(func)
+        var d = typeof throttle === 'number' ? mobx.autorunAsync(func, throttle) : mobx.autorun(func)
         disposables.push(d)
         return d
       },
@@ -67,7 +68,7 @@
 
     if (!params.columns) {
       var sampleItemKeys = computed(function() {
-        var sampleItem = asyncronous ? sortedItems.length && sortedItems[0] : params.data.length && params.data[0]
+        var sampleItem = asyncronous ? sortedItems.length && sortedItems[0] : unwrap(params.data).length && unwrap(params.data)[0]
         // TODO stil true for mobx? returning a joined string here as observables don't do deep equals
         return sampleItem ? Object.keys(sampleItem).join('🙈') : ''
       })
@@ -116,6 +117,8 @@
         return columns.get()
       }
     })
+
+    grid.sortColumn = columns.get().find(c => c.defaultSort)
 
     if (params.reorderableColumns) {
       var reordered
@@ -258,7 +261,7 @@
       }, 1)
     } else {
       var filteredItems = computed(function() {
-        var items = params.data,
+        var items = unwrap(params.data),
             columns = grid.columns,
             searchTerm = grid.searchTerm
 
@@ -314,17 +317,17 @@
   }
 
   function textFor(grid, col, item, idx) {
-    var val = unwrap(col && col.text)
+    var val = unwrap(col.text)
     if (typeof val === 'function') {
-      return val.call(this, item, idx) || ''
+      return val(item, idx, col) || ''
     }
     return !item || item[val] == null ? '' : String(item[val])
   }
 
   function getVal(prop, { grid, col, item, idx }) {
-    var val = unwrap(col && col[prop])
+    var val = unwrap(col[prop])
     if (typeof val === 'function') {
-      return val.call(this, item, idx) || ''
+      return val(item, idx, col) || ''
     }
     return val == null ? '' : String(val)
   }
@@ -369,7 +372,7 @@
       }
 
       return e('tr', { className, onClick }, grid.columns.map(col => e('td',
-        { className: getVal('class', { grid, col, item, idx }), key: 'td' + col.name },
+        { className: getVal('className', { grid, col, item, idx }), key: 'td' + col.name },
         e(col.component || FrypanText, { grid, col, item, idx, key: 'tdc' + col.name })))
       )
     }
@@ -421,7 +424,7 @@
 
       return e('th', {
         className: [
-          getVal('class', { col, grid }),
+          getVal('className', { col, grid }),
           col.filterValue !== undefined && 'frypan-filtered',
           grid.showFilters === idx && 'frypan-filter-open'
         ].filter(x => x).join(' '),
@@ -439,7 +442,7 @@
     },
 
     componentWillUnmount: function() {
-      this.disposables.forEach(function(d) { d.dispose() })
+      this.disposables.forEach(function(d) { d() })
     },
 
     render: function() {
@@ -464,6 +467,8 @@
       )
     }
   })
+
+  Frypan.FrypanText = FrypanText
 
   return Frypan
 })

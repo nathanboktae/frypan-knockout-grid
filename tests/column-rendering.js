@@ -1,4 +1,9 @@
 describe('column rendering', function() {
+  describe('core', function() {
+    it('should support computed data sources')
+    it('should unmount cleanly without error')
+  })
+
   describe('text', function() {
     it('should render the property of the row item if a string', function() {
       testSetup({
@@ -32,8 +37,9 @@ describe('column rendering', function() {
     it('should render the result of the function called with item and row index', function() {
       testSetup({
         columns: [{
-          text: function(item, rowIdx) {
-            return rowIdx + ': ' + item.fruit + (item.needsPeeling === true ? 's need peeling' : 's do not need peeling')
+          need: 'peeling',
+          text: function(item, rowIdx, col) {
+            return rowIdx + ': ' + item.fruit + (item.needsPeeling === true ? 's need ' + col.need : 's do not need ' + col.need)
           }
         }],
         data: fruits
@@ -89,7 +95,7 @@ describe('column rendering', function() {
     it('should add the class directly if a string or observable of a string', function() {
       testSetup({
         columns: [{
-          class: mobx.observable('fruits')
+          className: mobx.observable('fruits')
         }],
         data: fruits
       })
@@ -100,7 +106,7 @@ describe('column rendering', function() {
     it('should add the class(es) for header columns, where item and rowIdx are not available', function() {
       testSetup({
         columns: [{
-          class: function(item, rowIdx) {
+          className: function(item, rowIdx) {
             if (!item && rowIdx == null) {
               return 'header-class'
             }
@@ -115,7 +121,7 @@ describe('column rendering', function() {
     it('should add the class(es) of the result of a function called with item and row index', function() {
       testSetup({
         columns: [{
-          class: function(item, rowIdx) {
+          className: function(item, rowIdx) {
             if (item) {
               return rowIdx + '-' + item.fruit + '-' + item.needsPeeling
             }
