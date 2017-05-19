@@ -60,7 +60,7 @@
     })
 
     if (asyncronous) {
-      sortedItems = mobx.observable([])
+      grid.sortedItems = sortedItems = mobx.observable([])
     }
     if (grid.sortAscending == null) {
       grid.sortAscending = true
@@ -303,10 +303,17 @@
 
         return items
       })
+
+      Object.defineProperty(grid, 'sortedItems', {
+        enumerable: true,
+        get: function() {
+          return sortedItems.get()
+        }
+      })
     }
 
     grid.items = computed(function() {
-      var items = mobx.isObservableArray(sortedItems) ? sortedItems : sortedItems.get()
+      var items = grid.sortedItems
 
       if (items.length >= grid.visibleRowCount) {
         items = items.slice(grid.offset, grid.offset + grid.visibleRowCount)
@@ -379,9 +386,196 @@
   }),
 
   FrypanTbody = component({
+    componentDidMount: function() {
+      var
+        component = this,
+        tbody = component.tbody,
+        table = tbody.parentElement,
+        scrollArea = table.parentElement,
+        frypan = scrollArea.parentElement,
+        frypanStyle = getComputedStyle(frypan),
+        overflowY = frypanStyle['overflow-y'],
+        grid = this.props.grid,
+        thead = table.querySelector('thead'),
+        td = table.querySelector('tbody td'),
+        rowHeight,
+        waitForFirstItemsSub,
+        recalcOnColChange, recalcOnFirstData,
+        virtualized = overflowY === 'auto' || overflowY === 'scroll'
+
+      if (virtualized) {
+        var
+          topSpacer = table.querySelector('.frypan-top-spacer'),
+          bottomSpacer = table.querySelector('.frypan-bottom-spacer')
+
+        if (!td) {
+          waitForFirstItemDispose = mobx.reaction(
+            () => grid.sortedItems,
+            function() {
+              td = table.querySelector('tbody td')
+              if (td) {
+                waitForFirstItemDispose()
+                setup.call(this)
+              }
+            }
+          )
+        } else {
+          setup.call(this)
+        }
+      } else if (grid.resizableColumns) {
+        if (!td) {
+          waitForFirstItemsDispose = mobx.reaction(
+            () => grid.sortedItems,
+            () => { waitForFirstItemsDispose(); pegWidths() }
+          )
+        } else {
+          pegWidths()
+        }
+      }
+
+      function recalcColWidths() {
+        if (virtualized) {
+          // remove virtualization temporarily to include headers and columns together in width calculation
+          table.style['table-layout'] = ''
+          table.style['border-spacing'] = ''
+          thead.style.position = ''
+          frypan.classList.remove('frypan-virtualized')
+          grid.columns.forEach(c => c.width = null)
+        }
+
+        var thWidths = Array.prototype.map.call(thead.firstElementChild.childNodes, function(th) {
+          return th.offsetWidth
+        }),
+        tdWidths = Array.prototype.map.call(tbody.firstElementChild ? tbody.firstElementChild.childNodes : [], function(td) {
+          return td.offsetWidth
+        }),
+        columns = grid.columns
+
+        for (var i = 0; i < columns.length; i++) {
+          columns[i].width = Math.max(thWidths[i] || 0, tdWidths[i] || 0)
+        }
+
+        if (virtualized) {
+          table.style['table-layout'] = 'fixed'
+          table.style['border-spacing'] = '0'
+          thead.style.position = 'absolute'
+          frypan.classList.add('frypan-virtualized')
+        }
+      }
+
+      function pegWidths() {
+        if (!recalcOnColChange) {
+          //var firstRun = true
+          recalcOnColChange = mobx.autorunAsync(function () {
+            // if (grid.columns && firstRun) {
+            //   firstRun = false
+            //   return
+            // }
+            grid.columns && recalcColWidths()
+            if (!recalcOnFirstData) {
+              recalcOnFirstData = mobx.reaction(
+                () => grid.sortedItems,
+                () => {
+                  recalcOnFirstData()
+                  recalcOnFirstData = null
+                  recalcColWidths()
+                }
+              )
+            }
+          }, 1)
+        }
+        recalcColWidths()
+
+        table.style['table-layout'] = 'fixed'
+        table.style['border-spacing'] = '0'
+        table.style.width = '1px'
+      }
+
+      function setup() {
+        rowHeight = Math.max(td.offsetHeight, 2)
+        if (frypanStyle.display !== 'flex') {
+          scrollArea.style.height = '100%'
+        }
+        scrollArea.style['overflow'] = overflowY
+        frypan.style['overflow'] = 'hidden'
+
+        tbody.style.height = scrollArea.offsetHeight - thead.offsetHeight
+        topSpacer.style.display = 'block'
+        bottomSpacer.style.display = 'block'
+
+        pegWidths()
+
+        scrollArea.parentElement.style.position = 'relative'
+        thead.style.top = 0
+        thead.style.left = 0
+
+        updateVisibleRowCount()
+        var updater = mobx.autorun(updateOffset)
+        scrollArea.addEventListener('scroll', updateOffset)
+
+        var pendingResize, sizeAtStart = window.innerWidth,
+        resizeListener = function () {
+          updateVisibleRowCount()
+          if (!grid.resizableColumns) {
+            recalcColWidths()
+          } else {
+            if (pendingResize) {
+              clearTimeout(pendingResize)
+            }
+            pendingResize = setTimeout(function() {
+              pendingResize = null
+              var delta = window.innerWidth - sizeAtStart,
+                  d = Math.floor(delta / grid.columns.length)
+              sizeAtStart = window.innerWidth
+
+              grid.columns.forEach((col, i) => col.width = Math.max(col.width + d + (i === 0 ? delta % len : 0), grid.minColWidth))
+            }, 100)
+          }
+        }
+        window.addEventListener('resize', resizeListener)
+
+        this.dispose = function() {
+          updater && updater()
+          recalcOnColChange && recalcOnColChange()
+          recalcOnFirstData && recalcOnFirstData()
+          window.removeEventListener('resize', resizeListener)
+        }
+      }
+
+      function updateVisibleRowCount() {
+        grid.visibleRowCount = Math.ceil((scrollArea.clientHeight - thead.offsetHeight - 1) / rowHeight) + 1
+      }
+
+      var skipNextScroll
+      function updateOffset(e) {
+        if (skipNextScroll) {
+          skipNextScroll = false
+          return
+        }
+
+        var
+          offset = Math.floor(Math.max(0, scrollArea.scrollTop) / rowHeight),
+          topSpacerHeight = (offset * rowHeight) + thead.offsetHeight,
+          currOffset = mobx.untracked(() => grid.offset)
+
+        if (offset != currOffset) {
+          skipNextScroll = true
+        }
+        grid.offset = offset
+        topSpacer.style.height = topSpacerHeight + 'px'
+        bottomSpacer.style.height = Math.max(0, (grid.sortedItems.length - offset - grid.visibleRowCount) * rowHeight) + 'px'
+        thead.style.left = -scrollArea.scrollLeft + 'px'
+      }
+    },
+
+    componentWillUnmount: function() {
+      this.dispose()
+    },
+
     render: function() {
       var grid = this.props.grid
-      return e('tbody', null, grid.items.get().map(
+      //console.log('render')
+      return e('tbody', { ref: e => { /*console.log('ref!');*/ this.tbody = e } }, grid.items.get().map(
         (item, idx) => e(FrypanRow, { grid, item, idx, key: 'tr' + (grid.rowKey ? item[grid.rowKey] : idx) }))
       )
     }
@@ -430,7 +624,7 @@
         ].filter(x => x).join(' '),
         'aria-sort': grid.sortColumn === col ? (grid.sortAscending ? 'ascending' : 'descending') : undefined,
         style: {
-          width: col.width && (col.width + 'px')
+          width: col.width ? (col.width + 'px') : ''
         }
       }, children)
     }
@@ -447,6 +641,7 @@
 
     render: function() {
       var grid = this
+          //, theadWidth = grid.columns.reduce((w, c) => w + c.width, 0)
       return e('frypan', null,
         e('div', { className: 'frypan-scroll-area', key: 'scroll-area' }, [
           e('table', { key: 'the-table', }, [
@@ -455,7 +650,7 @@
                 return e('col', { style: { width: c.width ? c.width + 'px' : undefined }, key: 'col-' + c.name })
               })
             ),
-            e('thead', { width: grid.columns.reduce((w, c) => w + c.width, 0) + 'px', key: 'the-head' }, [
+            e('thead', { /*width: theadWidth,*/ key: 'the-head' }, [
               e('tr', { key: 'tr' }, grid.columns.map((col, idx) => e(FrypanTh, { col, grid, idx, key: 'th' + String(idx) })))
             ]),
             e('tbody', { className: 'frypan-top-spacer', style: { display: 'none' }, key: 'top-spacer' }),
