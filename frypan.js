@@ -390,6 +390,7 @@
       var
         component = this,
         tbody = component.tbody,
+        lastTbody = tbody,
         table = tbody.parentElement,
         scrollArea = table.parentElement,
         frypan = scrollArea.parentElement,
@@ -399,7 +400,7 @@
         thead = table.querySelector('thead'),
         td = table.querySelector('tbody td'),
         rowHeight,
-        waitForFirstItemsSub,
+        waitForFirstItem,
         recalcOnColChange, recalcOnFirstData,
         virtualized = overflowY === 'auto' || overflowY === 'scroll'
 
@@ -409,24 +410,24 @@
           bottomSpacer = table.querySelector('.frypan-bottom-spacer')
 
         if (!td) {
-          waitForFirstItemDispose = mobx.reaction(
-            () => grid.sortedItems,
-            function() {
-              td = table.querySelector('tbody td')
-              if (td) {
-                waitForFirstItemDispose()
-                setup.call(this)
-              }
+          waitForFirstItem = mobx.autorunAsync(function() {
+            td = grid.sortedItems && table.querySelector('tbody td')
+            if (td) {
+              waitForFirstItem()
+              setup.call(this)
             }
-          )
+          }, 1)
+          // setup will create a new dispose function, but we dispose
+          // of this one right before that, just in case a td never shows up
+          component.dispose = waitForFirstItem
         } else {
           setup.call(this)
         }
       } else if (grid.resizableColumns) {
         if (!td) {
-          waitForFirstItemsDispose = mobx.reaction(
+          waitForFirstItem = mobx.reaction(
             () => grid.sortedItems,
-            () => { waitForFirstItemsDispose(); pegWidths() }
+            () => { waitForFirstItemsDispose(); setTimeout(pegWidths, 1) }
           )
         } else {
           pegWidths()
@@ -534,7 +535,7 @@
         }
         window.addEventListener('resize', resizeListener)
 
-        this.dispose = function() {
+        component.dispose = function() {
           updater && updater()
           recalcOnColChange && recalcOnColChange()
           recalcOnFirstData && recalcOnFirstData()
@@ -546,10 +547,11 @@
         grid.visibleRowCount = Math.ceil((scrollArea.clientHeight - thead.offsetHeight - 1) / rowHeight) + 1
       }
 
-      var skipNextScroll
       function updateOffset(e) {
-        if (skipNextScroll) {
-          skipNextScroll = false
+        // when react rerenders the tbody, it replaces the existing tbody
+        // with a new one, causing a scroll event to fire. ignore that false scroll
+        if (lastTbody != tbody) {
+          lastTbody = tbody
           return
         }
 
@@ -558,9 +560,6 @@
           topSpacerHeight = (offset * rowHeight) + thead.offsetHeight,
           currOffset = mobx.untracked(() => grid.offset)
 
-        if (offset != currOffset) {
-          skipNextScroll = true
-        }
         grid.offset = offset
         topSpacer.style.height = topSpacerHeight + 'px'
         bottomSpacer.style.height = Math.max(0, (grid.sortedItems.length - offset - grid.visibleRowCount) * rowHeight) + 'px'
@@ -569,7 +568,7 @@
     },
 
     componentWillUnmount: function() {
-      this.dispose()
+      this.dispose && this.dispose()
     },
 
     render: function() {

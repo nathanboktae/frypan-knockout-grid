@@ -351,7 +351,7 @@ describe('asyncrounous sources', function() {
     })
   })
 
-  xdescribe('infinite scroll', function() {
+  describe('infinite scroll', function() {
     var scrollArea
     before(function() {
       // inifite scroll requires virtualization
@@ -411,7 +411,10 @@ describe('asyncrounous sources', function() {
 
     it('should append the new items to the end', function() {
       var originalScrollHeight = scrollArea.scrollHeight
-      scrollArea.scrollTop = scrollArea.scrollHeight - scrollArea.offsetHeight
+      setTimeout(function() {
+        scrollArea.scrollTop = scrollArea.scrollHeight - scrollArea.offsetHeight
+      }, 10)
+
       resolve([{
         fruit: 'guava',
         color: 'green'
@@ -423,7 +426,9 @@ describe('asyncrounous sources', function() {
       return pollUntilPassing(function() {
         scrollArea.scrollHeight.should.be.above(originalScrollHeight + 20)
       }).then(function() {
-        scrollArea.scrollTop = scrollArea.scrollHeight - scrollArea.offsetHeight - 5
+        return Promise.delay(100).then(function() {
+          scrollArea.scrollTop = scrollArea.scrollHeight - scrollArea.offsetHeight - 5
+        })
       }).then(function() {
         return pollUntilPassing(function() {
           testEl.querySelectorAll('tbody tr').length.should.be.above(7)
