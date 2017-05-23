@@ -390,7 +390,6 @@
       var
         component = this,
         tbody = component.tbody,
-        lastTbody = tbody,
         table = tbody.parentElement,
         scrollArea = table.parentElement,
         frypan = scrollArea.parentElement,
@@ -466,12 +465,7 @@
 
       function pegWidths() {
         if (!recalcOnColChange) {
-          //var firstRun = true
           recalcOnColChange = mobx.autorunAsync(function () {
-            // if (grid.columns && firstRun) {
-            //   firstRun = false
-            //   return
-            // }
             grid.columns && recalcColWidths()
             if (!recalcOnFirstData) {
               recalcOnFirstData = mobx.reaction(
@@ -548,13 +542,6 @@
       }
 
       function updateOffset(e) {
-        // when react rerenders the tbody, it replaces the existing tbody
-        // with a new one, causing a scroll event to fire. ignore that false scroll
-        if (lastTbody != tbody) {
-          lastTbody = tbody
-          return
-        }
-
         var
           offset = Math.floor(Math.max(0, scrollArea.scrollTop) / rowHeight),
           topSpacerHeight = (offset * rowHeight) + thead.offsetHeight,
@@ -573,9 +560,8 @@
 
     render: function() {
       var grid = this.props.grid
-      //console.log('render')
-      return e('tbody', { ref: e => { /*console.log('ref!');*/ this.tbody = e } }, grid.items.get().map(
-        (item, idx) => e(FrypanRow, { grid, item, idx, key: 'tr' + (grid.rowKey ? item[grid.rowKey] : idx) }))
+      return e('tbody', { key: 'maintbody', ref: e => this.tbody = e }, grid.items.get().map(
+        (item, idx) => e(FrypanRow, { grid, item, idx, key: 'tr' + (idx + grid.offset) }))
       )
     }
   }),
@@ -662,7 +648,7 @@
     }
   })
 
-  Frypan.FrypanText = FrypanText
+  Frypan.Text = FrypanText
 
   return Frypan
 })
