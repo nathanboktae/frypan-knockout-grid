@@ -10,7 +10,7 @@
 
   function Frypan(params) {
     var
-      async = typeof ko.unwrap(params.data) === 'function',
+      asynchronous = typeof ko.unwrap(params.data) === 'function',
       computeds = [],
       computed = function(func, throttle) {
         var c = throttle ? ko.computed(func).extend({ throttle: throttle }) : ko.computed(func)
@@ -37,7 +37,7 @@
 
     if (!Array.isArray(ko.unwrap(params.columns))) {
       var sampleItemKeys = computed(function() {
-        var sampleItem = async ? grid.sortedItems()[0] : ko.unwrap(params.data)[0]
+        var sampleItem = asynchronous ? grid.sortedItems()[0] : ko.unwrap(params.data)[0]
         // returning a joined string here as observables don't do deep equals
         return sampleItem ? Object.keys(sampleItem).join('🙈') : ''
       })
@@ -47,7 +47,7 @@
       var cols = ko.unwrap(params.columns) || sampleItemKeys().split('🙈').map(function(k) { return { text: k, name: k } })
       return cols.map(function(col, idx) {
         if (col.filterTemplate) {
-          if (typeof col.filter !== 'function' && !async) {
+          if (typeof col.filter !== 'function' && !asynchronous) {
             throw new Error('A filter function is required when filtering synchronous sources')
           }
           if (!ko.isObservable(col.filterValue)) {
@@ -139,7 +139,7 @@
       })
     }
 
-    if (async) {
+    if (asynchronous) {
       var
         outstandingRequest,
         criteriaChangedDuringRequest = false,
@@ -203,7 +203,7 @@
             }
             outstandingRequest.then(function(items) {
               if (!Array.isArray(items)) {
-                throw new Error('async request did not result in an array of items but was ' + typeof items)
+                throw new Error('asynchronous request did not result in an array of items but was ' + typeof items)
               }
               if (crit.skip) {
                 grid.sortedItems.splice.apply(grid.sortedItems, [crit.skip, 0].concat(items))
