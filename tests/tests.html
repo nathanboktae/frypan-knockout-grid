@@ -11,7 +11,7 @@
   <script src="../node_modules/babel-core/browser-polyfill.js"></script>
   <script src="../node_modules/mocha/mocha.js"></script>
   <script src="../node_modules/chai/chai.js"></script>
-  <script src="../node_modules/sinon-browser-only/sinon.js"></script>
+  <script src="../node_modules/sinon/pkg/sinon-2.3.1.js"></script>
   <script src="../node_modules/sinon-chai/lib/sinon-chai.js"></script>
   <script src="../node_modules/chai-dom/chai-dom.js"></script>
 
@@ -20,6 +20,7 @@
   <script>
     mocha.ui('bdd')
     mocha.timeout(4000)
+    mocha.globals(['data*']) // https://github.com/sinonjs/sinon/issues/143
     mocha.checkLeaks()
     var should = chai.should()
     chai.config.includeStack = true
