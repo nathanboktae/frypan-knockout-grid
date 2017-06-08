@@ -41,14 +41,6 @@ describe('asyncrounous sources', function() {
     delete Frypan.prototype.loadingComponent
   })
 
-  Promise.delay = function(delay) {
-    return new Promise(function(res) {
-      setTimeout(function() {
-        res()
-      }, delay)
-    })
-  }
-
   it('should render data resolved by the promise', function() {
     typicalAsyncTest()
     resolve(fruits)

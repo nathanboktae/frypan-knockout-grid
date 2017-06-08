@@ -68,6 +68,14 @@ randomOf = function() {
   return arguments[Math.round(Math.random() * arguments.length)]
 }
 
+Promise.delay = function(delay) {
+  return new Promise(function(res) {
+    setTimeout(function() {
+      res()
+    }, delay)
+  })
+}
+
 document.styleSheets[0].insertRule('td, th { height: 20px; margin: 0; border: 0; padding: 0 }', 10);
 
 beforeEach(function() {

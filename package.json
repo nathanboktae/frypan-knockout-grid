@@ -1,6 +1,6 @@
 {
   "name": "frypan-react-mobx-grid",
-  "version": "0.0.3",
+  "version": "0.0.4",
   "description": "A light-weight yet powerful observable component grid with a simple, functional composition style API, in a MobX and React flavor.",
   "main": "frypan.js",
   "devDependencies": {
@@ -13,7 +13,7 @@
     "grunt-saucelabs": "^8.6.1",
     "mocha": "^3.4.1",
     "react-dom": "^15.5.4",
-    "sinon-browser-only": "^1.12.1",
+    "sinon": "^2.3.1",
     "sinon-chai": "^2.8.0"
   },
   "scripts": {

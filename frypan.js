@@ -520,7 +520,8 @@
             pendingResize = setTimeout(function() {
               pendingResize = null
               var delta = window.innerWidth - sizeAtStart,
-                  d = Math.floor(delta / grid.columns.length)
+                  len = grid.columns.length,
+                  d = Math.floor(delta / len)
               sizeAtStart = window.innerWidth
 
               grid.columns.forEach((col, i) => col.width = Math.max(col.width + d + (i === 0 ? delta % len : 0), grid.minColWidth))
@@ -626,7 +627,6 @@
 
     render: function() {
       var grid = this
-          //, theadWidth = grid.columns.reduce((w, c) => w + c.width, 0)
       return e('frypan', null,
         e('div', { className: 'frypan-scroll-area', key: 'scroll-area' }, [
           e('table', { key: 'the-table', }, [
