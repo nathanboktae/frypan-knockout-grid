@@ -1,5 +1,5 @@
 describe('filtering', function() {
-  var setFilterTest = function(toggle) {
+  var setFilterTest = function(toggle, comp) {
       testSetup({
         filterToggleComponent: toggle,
         columns: [{
@@ -9,29 +9,7 @@ describe('filtering', function() {
         }, {
           text: 'color',
           filterOptions: ['red', 'yellow'],
-          filterComponent: function(props) {
-            var col = props.col
-            return e('div', { className: props.className }, col.filterOptions.map(function(color) {
-              return e('a', {
-                href: '',
-                key: color,
-                'aria-selected': col.filterValue && col.filterValue.indexOf(color) >= 0,
-                onClick: function(e) {
-                  e.preventDefault()
-                  if (!props.filterValue) {
-                    col.filterValue = [color]
-                  } else {
-                    var idx = val.indexOf(color)
-                    idx >= 0 ? val.splice(idx, 1) : val.push(color)
-                    col.filterValue = val.length ? val : undefined
-                  }
-                }
-              }, color)
-            }))
-          },
-          filter: function(filters, item /*, idx*/ ) {
-            return filters.indexOf(item.color) >= 0
-          }
+          filterComponent: comp
         }],
         data: fruits
       })
@@ -46,7 +24,7 @@ describe('filtering', function() {
     fruits.push({
       fruit: 'strawberry',
       needsPeeling: 25,
-      color: 'yellow',
+      color: 'red',
       component: function() {
         return componentBindingValue
       }
@@ -77,6 +55,22 @@ describe('filtering', function() {
     testEl.querySelector('th:nth-child(3)').should.have.class('frypan-filter-open').and.class('frypan-filter-open')
   })
 
+  it('should use filterOptionComponent to render an option if available', function() {
+    testSetup({
+      columns: [{
+        text: 'color',
+        filterOptions: ['blue', 'green'],
+        filterOptionComponent: function(props) {
+          props.should.have.property('col').with.property('filterValue')
+          return e('span', { key: props.option, className: 'option-comp-test' }, props.option.toUpperCase())
+        }
+      }],
+      data: fruits
+    })
+
+    textNodesFor('thead th:first-child .frypan-filters a span.option-comp-test').should.deep.equal(['BLUE', 'GREEN'])
+  })
+
   xit('should close the filter when the user clicks outside the grid, with animation classes', function() {
     setFilterTest()
     click('a.frypan-filter-toggle')
@@ -101,6 +95,40 @@ describe('filtering', function() {
     setFilterTest()
 
     filterOn(2, 1)
-    textNodesFor('tbody td:first-child span').should.deep.equal(['banana', 'strawberry'])
+    textNodesFor('tbody td:first-child span').should.deep.equal(['banana'])
   })
+
+  it('should add additional filters as they are clicked, and allow filter options to be removed', function() {
+    setFilterTest()
+
+    filterOn(2, 1)
+    textNodesFor('.frypan-filters a[aria-selected="true"]').should.deep.equal(['yellow'])
+    textNodesFor('tbody td:first-child span').should.deep.equal(['banana'])
+
+    filterOn(2, 0)
+    textNodesFor('.frypan-filters a[aria-selected="true"]').should.deep.equal(['red', 'yellow'])
+    textNodesFor('tbody td:first-child span').should.deep.equal(['apple', 'banana', 'strawberry'])
+
+    filterOn(2, 1)
+    textNodesFor('.frypan-filters a[aria-selected="true"]').should.deep.equal(['red'])
+    textNodesFor('tbody td:first-child span').should.deep.equal(['apple', 'strawberry'])
+
+    filterOn(2, 0)
+    textNodesFor('.frypan-filters a[aria-selected="true"]').should.be.empty.mmmkay
+    textNodesFor('tbody td:first-child span').should.deep.equal(['apple', 'banana', 'strawberry'])
+  })
+
+  it('should allow a custom filter component to be provided', function() {
+    setFilterTest(null, function(props) {
+      return e('ul', { className: props.className }, props.col.filterOptions.map(function(option) {
+        return e('li', { key: option }, option)
+      }))
+    })
+
+    click('a.frypan-filter-toggle')
+    textNodesFor('thead th:nth-of-type(3) ul.frypan-filters li').should.deep.equal(['red', 'yellow'])
+  })
+
+  it('should allow a custom filter function to be provided')
+  it('should require a custom function when no text property is on the column')
 })

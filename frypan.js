@@ -77,9 +77,15 @@
     var columns = computed(function() {
       var cols = params.columns || sampleItemKeys.get().split('🙈').map(k => ({ text: k, name: k }))
       return cols.map(function(col, idx) {
-        if (col.filterComponent) {
+        if (col.filterComponent || col.filterOptions) {
           if (typeof col.filter !== 'function' && !asyncronous) {
-            throw new Error('A filter function is required when filtering synchronous sources')
+            if (typeof col.text === 'string') {
+              col.filter = function(filters, item /*, idx*/ ) {
+                return filters.indexOf(item[col.text]) >= 0
+              }
+            } else {
+              throw new Error('A filter function is required when filtering synchronous sources and no text property is provided')
+            }
           }
           var pd = Object.getOwnPropertyDescriptor(col, 'filterValue')
           if (!pd || typeof pd.get !== 'function') {
@@ -155,7 +161,7 @@
         stateProps.forEach(function(prop) {
           grid[prop] = prop === 'sortColumn' ? grid.columns[settings[prop]] : settings[prop]
         })
-        if (Array.isArray(settings.filters)) {
+        if (settings.filters && !Array.isArray(settings.filters)) {
           grid.columns.forEach(function(col, colIdx) {
             if ('filterValue' in col) {
               col.filterValue = settings.filters[colIdx]
@@ -166,7 +172,13 @@
 
       computed(function() {
         var gridState = {
-          filters: grid.columns.map(col => col.filterValue)
+          // create an array-like object so we can distingush null and undefined
+          filters: grid.columns.reduce((o, col, i) => { 
+            if (col.filterValue !== undefined) {
+              o[i] = col.filterValue
+            }
+            return o
+          }, {})
         }
         stateProps.forEach(function(prop) {
           gridState[prop] = prop === 'sortColumn' ? grid.columns.indexOf(grid[prop]) : grid[prop]
@@ -567,6 +579,28 @@
     }
   }),
 
+  FilterOptions = function(props) {
+    var col = props.col
+    return e('div', { className: props.className }, col.filterOptions.map(function(option) {
+      return e('a', {
+        href: '#',
+        key: option,
+        'aria-selected': col.filterValue && col.filterValue.indexOf(option) >= 0,
+        onClick: function(e) {
+          var val = col.filterValue
+          e.preventDefault()
+          if (!val) {
+            col.filterValue = [option]
+          } else {
+            var idx = val.indexOf(option)
+            idx >= 0 ? val.splice(idx, 1) : val.push(option)
+            col.filterValue = val.length ? val.slice() : undefined
+          }
+        }
+      }, col.filterOptionComponent ? e(col.filterOptionComponent, { option, col }) : option)
+    }))
+  },
+
   FrypanTh = component({
     render: function() {
       var { col, grid, idx } = this.props,
@@ -585,7 +619,7 @@
           }
         }, col.name)
       ]
-      if (col.filterComponent) {
+      if ('filterValue' in col) {
         children.push(e('a', {
           className: 'frypan-filter-toggle',
           key: 'frypan-filter-toggle',
@@ -595,7 +629,7 @@
           }
         }, grid.filterToggleComponent && e(grid.filterToggleComponent, { col, grid, key: 'filter-toggle-comp' })))
 
-        children.push(e(col.filterComponent, { col, grid, key: 'filtercomp', className: 'frypan-filters' }))
+        children.push(e(col.filterComponent || FilterOptions, { col, grid, key: 'filtercomp', className: 'frypan-filters' }))
       }
 
       if (grid.resizableColumns) {
@@ -621,13 +655,24 @@
       init(this, this.props)
     },
 
+    componentDidMount: function() {
+      var comp = this
+      this.closeFiltersIfNeeded = function(e) {
+        if (e.target && !comp.theadEl.contains(e.target)) {
+          comp.showFilters = null
+        }
+      }
+      document.body.addEventListener('click', this.closeFiltersIfNeeded)
+    },
+
     componentWillUnmount: function() {
       this.disposables.forEach(function(d) { d() })
+      document.body.removeEventListener('click', this.closeFiltersIfNeeded)
     },
 
     render: function() {
       var grid = this
-      return e('frypan', null,
+      return e('frypan', { ref: function(el) { grid.el = el } },
         e('div', { className: 'frypan-scroll-area', key: 'scroll-area' }, [
           e('table', { key: 'the-table', }, [
             e('colgroup', { key: 'the-colgroup' },
@@ -635,7 +680,7 @@
                 return e('col', { style: { width: c.width ? c.width + 'px' : undefined }, key: 'col-' + c.name })
               })
             ),
-            e('thead', { /*width: theadWidth,*/ key: 'the-head' }, [
+            e('thead', { key: 'the-head', ref: function(el) { grid.theadEl = el } }, [
               e('tr', { key: 'tr' }, grid.columns.map((col, idx) => e(FrypanTh, { col, grid, idx, key: 'th' + String(idx) })))
             ]),
             e('tbody', { className: 'frypan-top-spacer', style: { display: 'none' }, key: 'top-spacer' }),
@@ -649,6 +694,7 @@
   })
 
   Frypan.Text = FrypanText
+  Frypan.Filter = FilterOptions
 
   return Frypan
 })
